@@ -9,19 +9,10 @@
 #include <iostream>
 #include <fstream>
 
-float get_rand0(){
-    return (rand()/(float)RAND_MAX);    //for test in single-thread situation
-}
-
-float get_rand2() {
+float get_rand2(unsigned int &seed) {
     int random_int;
-    static unsigned int seed = {0};
-    if (seed == 0)
-        seed = (unsigned int)rand();
     random_int = rand_r(&seed);
     return  random_int / (float)RAND_MAX;
-
-
 }
 
 int main(int argc, char* argv[])
@@ -50,15 +41,16 @@ int main(int argc, char* argv[])
 
     double whole_time = omp_get_wtime();
     omp_set_num_threads(P);
-
+    
+    srand(time(NULL));
 #pragma omp parallel
     {
-        srand(int(time(NULL)) ^ omp_get_thread_num());
 #pragma omp for reduction(+:steps, get_to_b)
         for (int i =0; i < N; ++i){
+            unsigned int seed = omp_get_thread_num() + i;
             int curr_x = x;
             while ((a < curr_x) && (curr_x < b)){
-                if (get_rand2()  <= p)
+                if (get_rand2(seed)  <= p)
                     ++curr_x;
                 else
                     --curr_x;

@@ -9,16 +9,8 @@
 #include <iostream>
 #include <fstream>
 
-float get_rand(){
+float get_rand0(){
     return (rand()/(float)RAND_MAX);    //for test in single-thread situation
-}
-
-float get_rand1(){
-    int random_int;
-    srand(omp_get_thread_num());
-    random_int = rand();
-    printf("rand int = %d\n", random_int); //generetes similar number/ why?
-    return  random_int / (double)RAND_MAX; //can't call rand from different threads?
 }
 
 float get_rand2() {
@@ -38,10 +30,6 @@ int main(int argc, char* argv[])
     float p;   //probability to step right
     int P;    //amount of threads
 
-    /*scanf("%d %d %d %d", &a, &b, &x, &N);
-    scanf("%f", &p);
-    scanf("%d", &P);*/
-
     if (argc != 7) { printf("bad input\n"); return 1; }
 
     a = atoi(argv[1]);
@@ -57,8 +45,6 @@ int main(int argc, char* argv[])
     P = atoi(argv[6]);
     if (P < 0) {printf("P >= 1!\n"); return 7; }
 
-
-
     long long steps = 0;        //int... 15 minutes left =(
     int get_to_b = 0;
 
@@ -71,15 +57,13 @@ int main(int argc, char* argv[])
 #pragma omp for reduction(+:steps, get_to_b)
         for (int i =0; i < N; ++i){
             int curr_x = x;
-            long stepone = 0;
             while ((a < curr_x) && (curr_x < b)){
                 if (get_rand2()  <= p)
                     ++curr_x;
                 else
                     --curr_x;
-                ++stepone;
+                ++steps;
             }
-            steps += stepone;
             if (curr_x == b)
                 ++get_to_b;
         }
@@ -87,16 +71,17 @@ int main(int argc, char* argv[])
 
     whole_time = omp_get_wtime() - whole_time;
 
-
-    printf("Avg steps = %f\n", steps/(float)N);
     float prob_to_get_b = get_to_b/(float)N;
     float avg_time = steps/(float)N;
+    
     printf("#particles, get to the b = %f\n", get_to_b/(float)N);
     printf("Time = %f\n", whole_time);
-
+    printf("Avg steps = %f\n", steps/(float)N);
+    
+    
     std::ofstream fout("stats.txt", std::ios_base::app);
-    //fout.open;
-    fout << prob_to_get_b << " " << avg_time << " " << whole_time << " " << a << " " << b << " " << x << " " << N << " " << p << " " << P << std::endl;
+    fout << prob_to_get_b << " " << avg_time << " " << whole_time << " " << a << " " << b \
+    << " " << x << " " << N << " " << p << " " << P << std::endl;
     fout.close();
     return 0;
 }

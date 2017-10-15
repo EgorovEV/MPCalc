@@ -3,11 +3,11 @@
 
 #include <omp.h>
 #include <stdio.h>
-#include <cstdlib>
+#include <stdlib.h>
 #include <time.h>
 
 
-float get_rand2(unsigned int &seed) {
+float get_rand2(unsigned int seed) {
     int random_int;
     random_int = rand_r(&seed);
     return  random_int / (float)RAND_MAX;
@@ -45,7 +45,7 @@ int main(int argc, char* argv[])
     {
 #pragma omp for reduction(+:steps, get_to_b)
         for (int i =0; i < N; ++i){
-            unsigned int seed = omp_get_thread_num() + i;
+            unsigned int seed = time(NULL) * (omp_get_thread_num() + i);
             int curr_x = x;
             while ((a < curr_x) && (curr_x < b)){
                 if (get_rand2(seed)  <= p)
@@ -70,7 +70,7 @@ int main(int argc, char* argv[])
 		printf("Can't open file!\n");
 		return 8;
 	}
-	fprintf(file, "%f %f %f %d %d %d %d %f %d", prob_to_get_b, avg_time, \
+	fprintf(file, "%f %f %f %d %d %d %d %f %d \n", prob_to_get_b, avg_time, \
 		whole_time, a, b, x, N, p, P);
 	fclose(file);
     return 0;

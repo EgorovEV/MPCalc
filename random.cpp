@@ -6,8 +6,6 @@
 #include <cstdlib>
 #include <time.h>
 
-#include <iostream>
-#include <fstream>
 
 float get_rand2(unsigned int &seed) {
     int random_int;
@@ -36,7 +34,7 @@ int main(int argc, char* argv[])
     P = atoi(argv[6]);
     if (P < 0) {printf("P >= 1!\n"); return 7; }
 
-    long long steps = 0;        //int... 15 minutes left =(
+    long long steps = 0;        
     int get_to_b = 0;
 
     double whole_time = omp_get_wtime();
@@ -66,14 +64,14 @@ int main(int argc, char* argv[])
     float prob_to_get_b = get_to_b/(float)N;
     float avg_time = steps/(float)N;
     
-    printf("#particles, get to the b = %f\n", get_to_b/(float)N);
-    printf("Time = %f\n", whole_time);
-    printf("Avg steps = %f\n", steps/(float)N);
-    
-    
-    std::ofstream fout("stats.txt", std::ios_base::app);
-    fout << prob_to_get_b << " " << avg_time << " " << whole_time << " " << a << " " << b \
-    << " " << x << " " << N << " " << p << " " << P << std::endl;
-    fout.close();
+	FILE *file;
+	file = fopen("stats.txt", "a");
+	if (file == NULL) {
+		printf("Can't open file!\n");
+		return 8;
+	}
+	fprintf(file, "%f %f %f %d %d %d %d %f %d", prob_to_get_b, avg_time, \
+		whole_time, a, b, x, N, p, P);
+	fclose(file);
     return 0;
 }

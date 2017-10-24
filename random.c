@@ -45,7 +45,7 @@ int main(int argc, char* argv[])
     {
 #pragma omp for reduction(+:steps, get_to_b)
         for (int i =0; i < N; ++i){
-            unsigned int seed = time(NULL) * (omp_get_thread_num() + i);
+            unsigned int seed = rand();
             int curr_x = x;
             while ((a < curr_x) && (curr_x < b)){
                 if (get_rand2(seed)  <= p)

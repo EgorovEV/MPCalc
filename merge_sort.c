@@ -23,10 +23,11 @@ void printArray(int A[], int size)
 void mysort(int *arr, int l, int r){
     qsort(&arr[l], r - l, sizeof(int), compare);
 }
-/*
-void merge(int *arr, int arr_size, int chank_size, int l, int r)
+
+void merge(int *arr, int arr_size, int chank_size, int l, int m, int r)
 {
-	int i, j, k;
+	int i_l, j_l, k_l, i_r, j_r, k_r;
+
 	int n1 = m - l + 1;
 	int n2 = r - m;
     int amount_of_responsible_elements = chank_size / 2;
@@ -39,9 +40,9 @@ void merge(int *arr, int arr_size, int chank_size, int l, int r)
 
 
 	
-	for (i = 0; i < n1; i++)
+	for (int i = 0; i < n1; i++)
 		L[i] = arr[l + i];
-	for (j = 0; j < n2; j++)
+	for (int j = 0; j < n2; j++)
 		R[j] = arr[m + 1 + j];
 
 	i_l = 0; // Initial index of first subarray go from left
@@ -65,7 +66,6 @@ void merge(int *arr, int arr_size, int chank_size, int l, int r)
                 ++j_l;
                 ++k_l;
             }
-            if (j_l == -1 || i_l == n1)
         }
     }
 
@@ -75,8 +75,8 @@ void merge(int *arr, int arr_size, int chank_size, int l, int r)
             --amount_of_responsible_elements;
             if (L[i_r] > R[j_r]) {
                 arr[k_r] = L[i_r];
-                --i_l;
-                --k_l;
+                --i_r;
+                --k_r;
             } else {
                 arr[k_r] = R[j_r];
                 --j_r;
@@ -101,7 +101,7 @@ void merge(int *arr, int arr_size, int chank_size, int l, int r)
 	free(L);
 	free(R);
 }
-*/
+
 
 void parallelSort(int *arr, int arr_size, int chank_size, int l, int r) {
     if (r - l > chank_size) {
@@ -111,7 +111,7 @@ void parallelSort(int *arr, int arr_size, int chank_size, int l, int r) {
 #pragma omp task
         parallelSort(arr, arr_size, chank_size, m + 1, r);
 #pragma omp taskwait
-        //merge(arr, arr_size, chank_size, l, r);
+        merge(arr, arr_size, chank_size, l, m, r);
     }else{
         mysort(arr, l, r);
     }
@@ -149,6 +149,5 @@ int main(int argc, char* argv[])
     qsort(arr, arr_size, sizeof(int), compare);
     whole_time = omp_get_wtime() - whole_time;
     printf("library quicksort work: %f\n", whole_time);
-
 	return 0;
 }

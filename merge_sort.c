@@ -23,13 +23,13 @@ void printArray(int A[], int size)
 void mysort(int *arr, int l, int r){
     qsort(&arr[l], r - l, sizeof(int), compare);
 }
-
-void merge(int arr[], int l, int r)
+/*
+void merge(int *arr, int arr_size, int chank_size, int l, int r)
 {
 	int i, j, k;
 	int n1 = m - l + 1;
 	int n2 = r - m;
-    qsort(arr, r - l + 1 , sizeof(int), compare);
+    int amount_of_responsible_elements = chank_size / 2;
     // create temp arrays
 	//int L[n1], R[n2];
 	int *L = NULL;
@@ -44,82 +44,78 @@ void merge(int arr[], int l, int r)
 	for (j = 0; j < n2; j++)
 		R[j] = arr[m + 1 + j];
 
-	i = 0; // Initial index of first subarray
-	j = 0; // Initial index of second subarray
-	k = l; // Initial index of merged subarray
-	while (i < n1 && j < n2)
-	{
-		if (L[i] <= R[j])
-		{
-			arr[k] = L[i];
-			i++;
-		}
-		else
-		{
-			arr[k] = R[j];
-			j++;
-		}
-		k++;
-	}
+	i_l = 0; // Initial index of first subarray go from left
+	j_l = 0; // Initial index of second subarray go from left
+	k_l = l; // Initial index of merged subarray go from left
+    i_r = n1; // Initial index of first subarray go from right
+    j_r = n2; // Initial index of second subarray go from right
+    k_r = r; // Initial index of merged subarray go from right
 
-	while (i < n1)
-	{
-		arr[k] = L[i];
-		i++;
-		k++;
-	}
 
-	while (j < n2)
-	{
-		arr[k] = R[j];
-		j++;
-		k++;
-	}
-	free(L);
-	free(R);
-}
-
-void merge(int *arr, int arr_size, int chank_size, int threads_amount, int chank_amount){
-    int l = 0;
-    int r = chank_size;
-    int m = r - (r - l) / 2;
-    for (i = 0; i < chank_amount; ++i) {
-        merge(arr, i * chank_size, (i + 1) * chank_size);
-        if (i + 1 == chank_amount){
-            cha
+#pragma omp task shared(i_l, j_l) firstprivate(amount_of_responsible_elements)
+    {
+        while (amount_of_responsible_elements > 0) {
+            --amount_of_responsible_elements;
+            if (L[i_l] < R[j_l]) {
+                arr[k_l] = L[i_l];
+                ++i_l;
+                ++k_l;
+            } else {
+                arr[k_l] = R[j_l];
+                ++j_l;
+                ++k_l;
+            }
+            if (j_l == -1 || i_l == n1)
         }
     }
 
-}*/
-
-void parallelSort(int *arr, int arr_size, int chank_size, int threads_amount, int l, int r) {
-
-    //CHANK SORT
-    int chank_amount = floor(arr_size / (double)chank_size);
-    for (int i = 0; i < chank_amount; ++i){
-#pragma omp task firstprivate(i)
-        mysort(arr, i * chank_size, (i + 1) * chank_size);
+#pragma omp task shared(i_r, j_r) firstprivate(amount_of_responsible_elements)
+    {
+        while (amount_of_responsible_elements > 0) {
+            --amount_of_responsible_elements;
+            if (L[i_r] > R[j_r]) {
+                arr[k_r] = L[i_r];
+                --i_l;
+                --k_l;
+            } else {
+                arr[k_r] = R[j_r];
+                --j_r;
+                --k_r;
+            }
+            if (j_r == -1 || i_r == n2)
+                break;
+        }
     }
 
-    //MERGING
-    //merge(arr, arr_size, chank_size, threads_amount, chank_amount);
+	while (i_l < i_r) {
+        arr[k_l] = L[i_l];
+        ++k_l;
+        ++i_l;
+    }
+    while (j_l < j_r) {
+        arr[k_r] = R[j_l];
+        --k_r;
+        ++i_l;
+    }
 
+	free(L);
+	free(R);
+}
+*/
+
+void parallelSort(int *arr, int arr_size, int chank_size, int l, int r) {
     if (r - l > chank_size) {
         int m = l + (r - l) / 2;
-
-        // Sort first and second halves
-        parallelSort(arr, l, m);
-        parallelSort(arr, m + 1, r);
+#pragma omp task
+        parallelSort(arr, arr_size, chank_size, l, m);
+#pragma omp task
+        parallelSort(arr, arr_size, chank_size, m + 1, r);
+#pragma omp taskwait
+        //merge(arr, arr_size, chank_size, l, r);
     }else{
-        merge(arr, l, m, r);
+        mysort(arr, l, r);
     }
-
-
-
 }
-
-
-
 
 
 int main(int argc, char* argv[])
@@ -136,12 +132,11 @@ int main(int argc, char* argv[])
         arr[i] = rand() % 100;
     }
 
-
     double whole_time = omp_get_wtime( );
 #pragma omp parallel
     {
 #pragma omp single
-        parallelSort(arr, arr_size, chank_size, P);
+        parallelSort(arr, arr_size, chank_size, 0, arr_size - 1);
     }
     whole_time = omp_get_wtime() - whole_time;
     printf("parallel sort work: %f\n", whole_time);

@@ -1,5 +1,9 @@
 /* C program for parallel Sort */
-//why concequence of headers is important?
+/*why concequence of headers is important?*/
+/*I take an idea of algorithm from this article, "section IV":
+ * http://ieeexplore.ieee.org/document/7036012/?part=1
+ */
+
 #include <stdlib.h>
 #include <math.h>
 #include <omp.h>

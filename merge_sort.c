@@ -21,16 +21,19 @@ void printArray(int A[], int size)
 }
 
 void mysort(int *arr, int l, int r){
-    qsort(&arr[l], r - l, sizeof(int), compare);
+    qsort(&arr[l], r - l + 1, sizeof(int), compare);
 }
 
 void merge(int *arr, int arr_size, int chank_size, int l, int m, int r)
 {
+    printf("\n");
+    printf("l = %d, m = %d, r = %d\n", l, m, r);
+
 	int i_l, j_l, k_l, i_r, j_r, k_r;
 
 	int n1 = m - l + 1;
 	int n2 = r - m;
-    int amount_of_responsible_elements = chank_size / 2;
+    int amount_of_responsible_elements = r-l+1;
     // create temp arrays
 	//int L[n1], R[n2];
 	int *L = NULL;
@@ -48,12 +51,15 @@ void merge(int *arr, int arr_size, int chank_size, int l, int m, int r)
 	i_l = 0; // Initial index of first subarray go from left
 	j_l = 0; // Initial index of second subarray go from left
 	k_l = l; // Initial index of merged subarray go from left
-    i_r = n1; // Initial index of first subarray go from right
-    j_r = n2; // Initial index of second subarray go from right
+    i_r = n1 - 1; // Initial index of first subarray go from right
+    j_r = n2 - 1; // Initial index of second subarray go from right
     k_r = r; // Initial index of merged subarray go from right
 
+    printArray(arr, arr_size);
+    printArray(L, n1);
+    printArray(R, n2);
 
-#pragma omp task shared(i_l, j_l) firstprivate(amount_of_responsible_elements)
+#pragma omp task firstprivate(j_l, i_l, amount_of_responsible_elements)
     {
         while (amount_of_responsible_elements > 0) {
             --amount_of_responsible_elements;
@@ -66,37 +72,56 @@ void merge(int *arr, int arr_size, int chank_size, int l, int m, int r)
                 ++j_l;
                 ++k_l;
             }
-        }
-    }
-
-#pragma omp task shared(i_r, j_r) firstprivate(amount_of_responsible_elements)
-    {
-        while (amount_of_responsible_elements > 0) {
-            --amount_of_responsible_elements;
-            if (L[i_r] > R[j_r]) {
-                arr[k_r] = L[i_r];
-                --i_r;
-                --k_r;
-            } else {
-                arr[k_r] = R[j_r];
-                --j_r;
-                --k_r;
-            }
-            if (j_r == -1 || i_r == n2)
+            if (j_l >= n2 || i_l >= n1) {
+                printf("from little_end dropped\n");
                 break;
+            }
+            printf("from little_end: in L i_l = %d, in R j_l = %d\n", i_l, j_l);
         }
     }
 
-	while (i_l < i_r) {
+    printArray(L, n1);
+    printArray(R, n2);
+#pragma omp task firstprivate(j_r, i_r, amount_of_responsible_elements)
+    {
+    amount_of_responsible_elements = chank_size;
+    while (amount_of_responsible_elements > 0) {
+        --amount_of_responsible_elements;
+        if (L[i_r] > R[j_r]) {
+            arr[k_r] = L[i_r];
+            --i_r;
+            --k_r;
+        } else {
+            arr[k_r] = R[j_r];
+            --j_r;
+            --k_r;
+        }
+        if (j_r < 0 || i_r < 0) {
+            printf("%d", j_r);
+            printf("from big_end droped\n");
+            break;
+        }
+        printf("from big_end: in L i_r = %d, in R j_r = %d\n", i_r, j_r);
+    }
+}
+
+#pragma omp taskwait
+printf("egfuqewgfui\n");
+    printArray(arr, arr_size);
+printf("khebgwbfiugqw\n");
+/*	while (i_l < i_r) {
+        printf("in while in L ");
         arr[k_l] = L[i_l];
         ++k_l;
         ++i_l;
     }
     while (j_l < j_r) {
+        printf("in while in R");
         arr[k_r] = R[j_l];
         --k_r;
-        ++i_l;
+        --j_l;
     }
+*/
 
 	free(L);
 	free(R);
@@ -110,6 +135,7 @@ void parallelSort(int *arr, int arr_size, int chank_size, int l, int r) {
         parallelSort(arr, arr_size, chank_size, l, m);
 #pragma omp task
         parallelSort(arr, arr_size, chank_size, m + 1, r);
+
 #pragma omp taskwait
         merge(arr, arr_size, chank_size, l, m, r);
     }else{
@@ -131,7 +157,7 @@ int main(int argc, char* argv[])
     for (int i = 0; i < arr_size; ++i){
         arr[i] = rand() % 100;
     }
-
+    omp_set_num_threads(P);
     double whole_time = omp_get_wtime( );
 #pragma omp parallel
     {

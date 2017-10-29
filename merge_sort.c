@@ -29,12 +29,11 @@ void mysort(int *arr, int l, int r){
 
 void merge(int *arr, int chank_size, int l, int m, int r)
 {
-
 	int i_l, j_l, k_l, i_r, j_r, k_r;
 
 	int n1 = m - l + 1;
 	int n2 = r - m;
-    int amount_of_responsible_elements = r-l + 1 ;
+    int amount_of_responsible_elements = (r-l)/2 + 1;
  	int *L = NULL;
 	int *R = NULL;
 	L = (int*)malloc(n1 * sizeof(int));
@@ -52,7 +51,7 @@ void merge(int *arr, int chank_size, int l, int m, int r)
     j_r = n2 - 1; // Initial index of second subarray goes from right
     k_r = r; // Initial index of merged subarray goes from right
 
-#pragma omp task firstprivate(j_l, i_l, amount_of_responsible_elements)
+#pragma omp task firstprivate(amount_of_responsible_elements)
     {
         while (amount_of_responsible_elements > 0) {
             --amount_of_responsible_elements;
@@ -65,16 +64,17 @@ void merge(int *arr, int chank_size, int l, int m, int r)
                 ++j_l;
                 ++k_l;
             }
+
             if (j_l >= n2 || i_l >= n1) {
                 break;
             }
         }
     }
 
-#pragma omp task firstprivate(j_r, i_r, amount_of_responsible_elements)
+#pragma omp task firstprivate(amount_of_responsible_elements)
     {
-    amount_of_responsible_elements = chank_size;
-    while (amount_of_responsible_elements > 0) {
+        while (amount_of_responsible_elements > 0) {
+
         --amount_of_responsible_elements;
         if (L[i_r] > R[j_r]) {
             arr[k_r] = L[i_r];
@@ -92,7 +92,7 @@ void merge(int *arr, int chank_size, int l, int m, int r)
 }
 
 #pragma omp taskwait
-	free(L);
+    free(L);
 	free(R);
 }
 
@@ -113,43 +113,73 @@ void parallelSort(int *arr, int chank_size, int l, int r) {
 }
 
 
-int main(int argc, char* argv[])
-{
+int main(int argc, char* argv[]) {
     int arr_size, chank_size, P;
     arr_size = atoi(argv[1]);
     chank_size = atoi(argv[2]);
     P = atoi(argv[3]);
 
-	int *arr = (int*)malloc(sizeof(int) * arr_size);
+    int *arr = (int *) malloc(sizeof(int) * arr_size);
 
-    int *arr2 = (int*)malloc(sizeof(int) * arr_size);
+    int *arr2 = (int *) malloc(sizeof(int) * arr_size);
     srand(time(NULL));
 
-    for (int i = 0; i < arr_size; ++i){
-        arr[i] = rand();
+//create array
+    for (int i = 0; i < arr_size; ++i) {
+        //arr[i] = rand();
+        arr[i] = rand() % 10000;  //"%10000" is special for data.txt, for good view;
         arr2[i] = arr[i];
     }
+//write array to data.txt
+    FILE *file;
+    file = fopen("data.txt", "a");
+    if (file == NULL) {
+        printf("Can't open data.txt!\n");
+        return 8;
+    }
+
+    for (int i = 0; i < arr_size; ++i)
+        fprintf(file, "%d ", arr[i]);
+    fprintf(file, "\n");
+
+//sorting, using OMP
     omp_set_num_threads(P);
-
-
-    double whole_time = omp_get_wtime( );
+    double whole_time = omp_get_wtime();
 #pragma omp parallel
     {
 #pragma omp single
         parallelSort(arr, chank_size, 0, arr_size - 1);
     }
-    whole_time = omp_get_wtime() - whole_time;
-    printf("parallel sort work: %f\n", whole_time);
+    double whole_time_of_parallelSort = omp_get_wtime() - whole_time;
+    printf("parallel sort work: %f\n", whole_time_of_parallelSort);
 
+//sorting, using library qsort
     whole_time = omp_get_wtime();
     qsort(arr2, arr_size, sizeof(int), compare);
     whole_time = omp_get_wtime() - whole_time;
     printf("library quicksort work: %f\n", whole_time);
 
-    for (int i=0; i < arr_size; ++i){
-        if (arr[i] != arr2[i]){
+//checking errors
+    for (int i = 0; i < arr_size; ++i)
+        if (arr[i] != arr2[i])
             printf("Всё пропало!!!\n");
-        }
+
+//writing sorted array to data.txt
+    for (int i = 0; i < arr_size; ++i)
+        fprintf(file, "%d ", arr[i]);
+    fprintf(file, "\n\n");
+    fclose(file);
+
+//writing statistic
+    FILE *file2;
+    file2 = fopen("stats.txt", "a");
+    if (file == NULL) {
+        printf("Can't open file!\n");
+        return 8;
     }
-	return 0;
+    fprintf(file2, "%f %f %d %d %d \n", whole_time_of_parallelSort, whole_time, \
+        arr_size, chank_size, P);
+    fclose(file2);
+
+    return 0;
 }

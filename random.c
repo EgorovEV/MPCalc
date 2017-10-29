@@ -6,13 +6,6 @@
 #include <stdlib.h>
 #include <time.h>
 
-
-float get_rand2(unsigned int seed) {
-    int random_int;
-    random_int = rand_r(&seed);
-    return  random_int / (float)RAND_MAX;
-}
-
 int main(int argc, char* argv[])
 {
     int a,b,x,N; //begin of line, end; start position, amount of particles;
@@ -48,7 +41,7 @@ int main(int argc, char* argv[])
             unsigned int seed = rand();
             int curr_x = x;
             while ((a < curr_x) && (curr_x < b)){
-                if (get_rand2(seed)  <= p)
+                if ((rand_r(&seed) / (float)RAND_MAX)  <= p)
                     ++curr_x;
                 else
                     --curr_x;

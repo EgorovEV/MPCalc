@@ -52,6 +52,7 @@ void* merge_from_left(void *args){
     k_l = chank->l; // Initial index of merged subarray goes from left
 
     while (amount_of_responsible_elements > 0) {
+        //printf("_");
         --amount_of_responsible_elements;
         if (chank->L[i_l] < chank->R[j_l]) {
             *(chank->arr_begin + k_l) = chank->L[i_l];
@@ -77,6 +78,7 @@ void* merge_from_right(void *args) {
     k_r = chank->r; // Initial index of merged subarray goes from right
 
     while (amount_of_responsible_elements > 0) {
+        //printf("+");
         --amount_of_responsible_elements;
         if (chank->L[i_r] > chank->R[j_r]) {
             *(chank->arr_begin + k_r) = chank->L[i_r];
@@ -106,15 +108,18 @@ void merge(int *arr, int left_bounder, int middle, int right_bounder)
     memcpy(current_chank.L, &arr[left_bounder], current_chank.n1 * sizeof(int));
     memcpy(current_chank.R, &arr[middle +1], current_chank.n2 * sizeof(int));
 
-    pthread_t for_left;
-    pthread_t for_right;
-
-    pthread_create(&for_left, NULL, merge_from_left, (void*) &current_chank);
-    pthread_create(&for_right, NULL, merge_from_right, (void*) &current_chank);
+    pthread_t threads[NUM_THREADS];
+    //pthread_t for_right;
+    for (int i =0; i < NUM_THREADS; ++i) {
+        if (i % 2 == 0)
+            pthread_create(&threads[i], NULL, merge_from_left, (void *) &current_chank);
+        else
+            pthread_create(&threads[i], NULL, merge_from_right, (void *) &current_chank);
+    }
     int status_addr;
-    pthread_join(for_left, (void**)&status_addr);
-    pthread_join(for_right, (void**)&status_addr);
-
+    for (int i=0; i < NUM_THREADS; ++i) {
+        pthread_join(threads[i], NULL);
+    }
     free(current_chank.L);
     free(current_chank.R);
 }

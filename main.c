@@ -92,8 +92,9 @@ void* merge_from_right(void *args) {
     }
 }
 
-void merge(int *arr, int left_bounder, int middle, int right_bounder)
+void merge(int *arr, int left_bounder, int middle, int right_bounder, int max_thread)
 {
+
     args_for_merge current_chank;
 
     current_chank.l = left_bounder;
@@ -107,13 +108,18 @@ void merge(int *arr, int left_bounder, int middle, int right_bounder)
 
     memcpy(current_chank.L, &arr[left_bounder], current_chank.n1 * sizeof(int));
     memcpy(current_chank.R, &arr[middle +1], current_chank.n2 * sizeof(int));
+    if (max_thread > 1) {
+        pthread_t threads[2];
+        pthread_create(&threads[0], NULL, merge_from_left, (void *) &current_chank);
+        pthread_create(&threads[1], NULL, merge_from_right, (void *) &current_chank);
 
-    pthread_t threads[2];
-    pthread_create(&threads[0], NULL, merge_from_left, (void *) &current_chank);
-    pthread_create(&threads[1], NULL, merge_from_right, (void *) &current_chank);
-
-    for (int i=0; i < 2; ++i) {
-        pthread_join(threads[i], NULL);
+        for (int i = 0; i < 2; ++i) {
+            pthread_join(threads[i], NULL);
+        }
+    }
+    else{
+        merge_from_left((void*) &current_chank);
+        merge_from_right((void*) &current_chank);
     }
     free(current_chank.L);
     free(current_chank.R);
@@ -155,7 +161,7 @@ void* initParallelSort(void* args){
             initParallelSort((void*) &args[0]);
             initParallelSort((void*) &args[1]);
         }
-        merge(arrArgs->arr, arrArgs->l, m, arrArgs->r);
+        merge(arrArgs->arr, arrArgs->l, m, arrArgs->r, arrArgs->max_threads);
     }else{
         mysort(arrArgs->arr, arrArgs->l, arrArgs->r);
     }
@@ -186,8 +192,8 @@ int main(int argc, char* argv[]) {
 
 //create array
             for (int i = 0; i < arr_size; ++i) {
-                //arr[i] = rand();
-                arr[i] = rand() % 10000;  //"%10000" is special for data.txt, for good view;
+                arr[i] = rand();
+                //arr[i] = rand() % 10000;  //"%10000" is special for data.txt, for good view;
                 arr2[i] = arr[i];
             }
 //write array to data.txt

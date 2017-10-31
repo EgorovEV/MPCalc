@@ -46,7 +46,12 @@ void mysort(int *arr, int l, int r){
 void* merge_from_left(void *args){
 
     args_for_merge *chank = (args_for_merge*) args;
-    int amount_of_responsible_elements = (chank->r - chank->l) / 2 + 1;
+    int amount_of_responsible_elements;
+    if ((chank->r - chank->l) % 2 == 1) {
+        amount_of_responsible_elements = (chank->r - chank->l) / 2+1;
+    }else {
+        amount_of_responsible_elements = (chank->r - chank->l) / 2;
+    }
 
     int i_l, j_l, k_l;
     i_l = 0; // Initial index of first subarray goes from left
@@ -56,10 +61,13 @@ void* merge_from_left(void *args){
     while (amount_of_responsible_elements > 0) {
         --amount_of_responsible_elements;
         if (chank->L[i_l] < chank->R[j_l]) {
+            //printf("to %d (k_l)(I) insert %d\n", k_l, (chank->L[i_l]));
             *(chank->arr_begin + k_l) = chank->L[i_l];
             ++i_l;
             ++k_l;
         } else {
+            //printf("to %d (k_l)(J) insert %d i_l == %d n2 =%d\n", k_l, chank->R[j_l], j_l, chank->n2);
+            //printArray(chank->R, chank->n2);
             *(chank->arr_begin + k_l) = chank->R[j_l];
             ++j_l;
             ++k_l;
@@ -73,6 +81,7 @@ void* merge_from_right(void *args) {
 
     int amount_of_responsible_elements = (chank->r - chank->l) / 2 + 1;
 
+
     int i_r, j_r, k_r;
     i_r = chank->n1 - 1; // Initial index of first subarray goes from right
     j_r = chank->n2 - 1; // Initial index of second subarray goes from right
@@ -80,11 +89,15 @@ void* merge_from_right(void *args) {
 
     while (amount_of_responsible_elements > 0) {
         --amount_of_responsible_elements;
-        if (chank->L[i_r] > chank->R[j_r]) {
+        if (chank->L[i_r] >= chank->R[j_r]) {
             *(chank->arr_begin + k_r) = chank->L[i_r];
+            //printf("to %d (k_r)(I) insert %d\n", k_r, chank->L[i_r]);
+            //printArray(chank->L, chank->n2);
             --i_r;
             --k_r;
         } else {
+
+            //printf("to %d (k_r)(J) insert %d\n", k_r, chank->R[j_r]);
             *(chank->arr_begin + k_r) = chank->R[j_r];
             --j_r;
             --k_r;
@@ -94,10 +107,11 @@ void* merge_from_right(void *args) {
 
 void merge(int *arr, int left_bounder, int middle, int right_bounder, int max_thread)
 {
-
+    //printArray(&arr[left_bounder], right_bounder - left_bounder + 1);
     args_for_merge current_chank;
 
     current_chank.l = left_bounder;
+    //printf("lb%d rb%d", left_bounder, right_bounder);
     current_chank.r = right_bounder;
     current_chank.arr_begin = &arr[0];
     current_chank.n1 = middle - left_bounder + 1;
@@ -109,17 +123,23 @@ void merge(int *arr, int left_bounder, int middle, int right_bounder, int max_th
     memcpy(current_chank.L, &arr[left_bounder], current_chank.n1 * sizeof(int));
     memcpy(current_chank.R, &arr[middle +1], current_chank.n2 * sizeof(int));
     if (max_thread > 1) {
+        //printf("paral\n");
+        //pthread_barrier_init(&barrier, NULL, 2);
+
         pthread_t threads[2];
         pthread_create(&threads[0], NULL, merge_from_left, (void *) &current_chank);
         pthread_create(&threads[1], NULL, merge_from_right, (void *) &current_chank);
 
-        for (int i = 0; i < 2; ++i) {
+        for (int i = 0; i < 2; ++i) {   //при маленьких секциях, потоки не успеват отработать
+                    //запускаются новые, и случается datarace. нужно ждать потоки.
             pthread_join(threads[i], NULL);
         }
     }
     else{
         merge_from_left((void*) &current_chank);
         merge_from_right((void*) &current_chank);
+        //printArray(arr, right_bounder-left_bounder+1);
+        //printf("\n");
     }
     free(current_chank.L);
     free(current_chank.R);
@@ -130,7 +150,7 @@ void merge(int *arr, int left_bounder, int middle, int right_bounder, int max_th
 void* initParallelSort(void* args){
     paralSortArgs *arrArgs = (paralSortArgs *) args;
 
-    if (arrArgs->r - arrArgs->l > arrArgs->chank_sz) {
+    if (arrArgs->r - arrArgs->l + 1> arrArgs->chank_sz) {
         int m = arrArgs->l + (arrArgs->r - arrArgs->l) / 2;
 
         paralSortArgs args[2];
@@ -150,6 +170,7 @@ void* initParallelSort(void* args){
         args[1].max_threads = arrArgs->max_threads;
 
         if (arrArgs->threadsExist < arrArgs->max_threads) {
+            //printf("paral:\n");
             pthread_t threads[2];
             for (int i = 0; i < 2; ++i) {
                 pthread_create(&threads[i], NULL, initParallelSort, (void*) &args[i]);
@@ -192,7 +213,7 @@ int main(int argc, char* argv[]) {
 
 //create array
             for (int i = 0; i < arr_size; ++i) {
-                arr[i] = rand();
+                arr[i] = rand() % 100;
                 //arr[i] = rand() % 10000;  //"%10000" is special for data.txt, for good view;
                 arr2[i] = arr[i];
             }
@@ -209,7 +230,6 @@ int main(int argc, char* argv[]) {
             fprintf(file, "\n");
 
 //sorting, using OMP
-            omp_set_num_threads(P);
             double whole_time = omp_get_wtime();
 
             //printArray(arr, arr_size);
@@ -223,7 +243,21 @@ int main(int argc, char* argv[]) {
             args.threadsExist = 1;
             args.max_threads = P;
 
+            arr[0] = 9;
+            arr[1] = 8;
+            arr[2] = 7;
+            arr[3] = 6;
+            arr[4] = 5;
+            arr[5] = 4;
+            arr[6] = 3;
+            arr[7] = 2;
+            arr[8] = 1;
+            arr[9] = -1;
+            memcpy(arr2, arr, 10*sizeof(int));
+
+            //printArray(arr, arr_size);
             initParallelSort((void *) &args);
+            //printArray(arr, arr_size);
 
             double whole_time_of_parallelSort = omp_get_wtime() - whole_time;
             printf("parallel sort work: %f\n", whole_time_of_parallelSort);
@@ -258,6 +292,7 @@ int main(int argc, char* argv[]) {
 
      //   }
     //}
-
+    free(arr);
+    free(arr2);
     return 0;
 }

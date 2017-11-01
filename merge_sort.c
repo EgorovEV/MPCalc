@@ -4,8 +4,6 @@
  * http://ieeexplore.ieee.org/document/7036012/?part=1
  */
 
-//НЕТ, НЕ ТОТ КОММИТ, СЕЙЧАС ПОФИКШУ!
-
 #include <stdlib.h>
 #include <omp.h>
 #include <stdio.h>
@@ -48,20 +46,13 @@ void mysort(int *arr, int l, int r){
 void* merge_from_left(void *args){
 
     args_for_merge *chank = (args_for_merge*) args;
-    int amount_of_responsible_elements;
-    if (chank->n1 >= chank->n2){
-        amount_of_responsible_elements = (chank->r - chank->l) / 2+1;
-    }else {
-        amount_of_responsible_elements = (chank->r - chank->l) / 2;
-    }
 
     int i_l, j_l, k_l;
     i_l = 0; // Initial index of first subarray goes from left
     j_l = 0; // Initial index of second subarray goes from left
     k_l = chank->l; // Initial index of merged subarray goes from left
 
-    while (amount_of_responsible_elements > 0) {
-        --amount_of_responsible_elements;
+    while (42 == 42) {
         if (chank->L[i_l] < chank->R[j_l]) {
             *(chank->arr_begin + k_l) = chank->L[i_l];
             ++i_l;
@@ -81,22 +72,13 @@ void* merge_from_left(void *args){
 void* merge_from_right(void *args) {
     args_for_merge *chank = (args_for_merge *) args;
 
-    int amount_of_responsible_elements;// = (chank->r - chank->l) / 2 + 1;
-    if (chank->n2 >= chank->n1){
-        amount_of_responsible_elements = (chank->r - chank->l) / 2+1;
-    }else {
-        amount_of_responsible_elements = (chank->r - chank->l) / 2;
-    }
-
     int i_r, j_r, k_r;
     i_r = chank->n1 - 1; // Initial index of first subarray goes from right
     j_r = chank->n2 - 1; // Initial index of second subarray goes from right
     k_r = chank->r; // Initial index of merged subarray goes from right
 
-    while (amount_of_responsible_elements > 0) {
-        --amount_of_responsible_elements;
+    while (42 == 42) {
         if (chank->L[i_r] >= chank->R[j_r]) {
-            printf("mv element L[i_r]=%d\n", chank->L[i_r]);
             *(chank->arr_begin + k_r) = chank->L[i_r];
             --i_r;
             --k_r;
@@ -128,7 +110,7 @@ void merge(int *arr, int left_bounder, int middle, int right_bounder, int max_th
     memcpy(current_chank.R, &arr[middle +1], current_chank.n2 * sizeof(int));
 
     if (max_thread > 1) {
-        printf("paral\n");
+
         pthread_t threads[2];
         pthread_create(&threads[0], NULL, merge_from_left, (void *) &current_chank);
         pthread_create(&threads[1], NULL, merge_from_right, (void *) &current_chank);
@@ -192,11 +174,12 @@ int main(int argc, char* argv[]) {
     arr_size = atoi(argv[1]);
     chank_size = atoi(argv[2]);
     P = atoi(argv[3]);
-    
+
     int *arr = (int *) malloc(sizeof(int) * arr_size);
+
     int *arr2 = (int *) malloc(sizeof(int) * arr_size);
     srand(time(NULL));
-    
+
 //create array
     for (int i = 0; i < arr_size; ++i) {
         arr[i] = rand() % 100;
@@ -217,7 +200,6 @@ int main(int argc, char* argv[]) {
 
 //sorting, using OMP
     double whole_time = omp_get_wtime();
-
     paralSortArgs args;
     args.arr = arr;
     args.chank_sz = chank_size;
@@ -227,12 +209,7 @@ int main(int argc, char* argv[]) {
     args.threadsExist = 1;
     args.max_threads = P;
 
-    
-    printArray(arr, arr_size);
-    printf("\n\n");
     initParallelSort((void *) &args);
-    printf("\n\n");
-    printArray(arr, arr_size);
 
     double whole_time_of_parallelSort = omp_get_wtime() - whole_time;
     printf("parallel sort work: %f\n", whole_time_of_parallelSort);
@@ -264,6 +241,7 @@ int main(int argc, char* argv[]) {
     fprintf(file2, "%f %f %d %d %d \n", whole_time_of_parallelSort, whole_time, \
         arr_size, chank_size, P);
     fclose(file2);
+
     free(arr);
     free(arr2);
     return 0;

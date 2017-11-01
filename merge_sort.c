@@ -4,6 +4,8 @@
  * http://ieeexplore.ieee.org/document/7036012/?part=1
  */
 
+//НЕТ, НЕ ТОТ КОММИТ, СЕЙЧАС ПОФИКШУ!
+
 #include <stdlib.h>
 #include <omp.h>
 #include <stdio.h>

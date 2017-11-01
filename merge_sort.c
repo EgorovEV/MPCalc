@@ -47,9 +47,6 @@ void* merge_from_left(void *args){
 
     args_for_merge *chank = (args_for_merge*) args;
     int amount_of_responsible_elements;
-    //if ((chank->r - chank->l) % 2 == 1) {
-    printf("ch->n1=%d \n", chank->n1);
-    printf("ch->n2=%d \n", chank->n2);
     if (chank->n1 >= chank->n2){
         amount_of_responsible_elements = (chank->r - chank->l) / 2+1;
     }else {
@@ -64,20 +61,14 @@ void* merge_from_left(void *args){
     while (amount_of_responsible_elements > 0) {
         --amount_of_responsible_elements;
         if (chank->L[i_l] < chank->R[j_l]) {
-            //printf("to %d (k_l)(I) insert %d\n", k_l, (chank->L[i_l]));
-            printf("mv element L[i_l]=%d\n", chank->L[i_l]);
             *(chank->arr_begin + k_l) = chank->L[i_l];
             ++i_l;
             ++k_l;
         } else {
-            //printf("to %d (k_l)(J) insert %d i_l == %d n2 =%d\n", k_l, chank->R[j_l], j_l, chank->n2);
-            //printArray(chank->R, chank->n2);
-            printf("mv element L[j_l]=%d\n", chank->R[j_l]);
             *(chank->arr_begin + k_l) = chank->R[j_l];
             ++j_l;
             ++k_l;
         }
-        //printf("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA/ НАЗАЧЕМ Я ЭТО СТЕР РАНЬШЕ?!"){
         if (j_l >= chank->n2 || i_l >= chank->n1) {
             break;
         }
@@ -105,13 +96,9 @@ void* merge_from_right(void *args) {
         if (chank->L[i_r] >= chank->R[j_r]) {
             printf("mv element L[i_r]=%d\n", chank->L[i_r]);
             *(chank->arr_begin + k_r) = chank->L[i_r];
-            //printf("to %d (k_r)(I) insert %d\n", k_r, chank->L[i_r]);
-            //printArray(chank->L, chank->n2);
             --i_r;
             --k_r;
         } else {
-            //printf("to %d (k_r)(J) insert %d\n", k_r, chank->R[j_r]);
-            printf("mv element L[j_r]=%d\n", chank->R[j_r]);
             *(chank->arr_begin + k_r) = chank->R[j_r];
             --j_r;
             --k_r;
@@ -124,11 +111,9 @@ void* merge_from_right(void *args) {
 
 void merge(int *arr, int left_bounder, int middle, int right_bounder, int max_thread)
 {
-    //printArray(&arr[left_bounder], right_bounder - left_bounder + 1);
     args_for_merge current_chank;
 
     current_chank.l = left_bounder;
-    //printf("lb%d rb%d", left_bounder, right_bounder);
     current_chank.r = right_bounder;
     current_chank.arr_begin = &arr[0];
     current_chank.n1 = middle - left_bounder + 1;
@@ -142,8 +127,6 @@ void merge(int *arr, int left_bounder, int middle, int right_bounder, int max_th
 
     if (max_thread > 1) {
         printf("paral\n");
-        //pthread_barrier_init(&barrier, NULL, 2);
-
         pthread_t threads[2];
         pthread_create(&threads[0], NULL, merge_from_left, (void *) &current_chank);
         pthread_create(&threads[1], NULL, merge_from_right, (void *) &current_chank);
@@ -153,16 +136,8 @@ void merge(int *arr, int left_bounder, int middle, int right_bounder, int max_th
         }
     }
     else{
-        printf("Now will merge:\n");
-        printArray(&arr[left_bounder], current_chank.n1);
-        printArray(&arr[middle+1], current_chank.n2);
         merge_from_left((void*) &current_chank);
         merge_from_right((void*) &current_chank);
-        printf("Resulnt of merge:\n");
-        printArray(&arr[left_bounder], current_chank.n1+current_chank.n2);
-
-        //printArray(arr, right_bounder-left_bounder+1);
-        //printf("\n");
     }
     free(current_chank.L);
     free(current_chank.R);
@@ -193,7 +168,6 @@ void* initParallelSort(void* args){
         args[1].max_threads = arrArgs->max_threads;
 
         if (arrArgs->threadsExist < arrArgs->max_threads) {
-            //printf("paral:\n");
             pthread_t threads[2];
             for (int i = 0; i < 2; ++i) {
                 pthread_create(&threads[i], NULL, initParallelSort, (void*) &args[i]);
@@ -216,24 +190,11 @@ int main(int argc, char* argv[]) {
     arr_size = atoi(argv[1]);
     chank_size = atoi(argv[2]);
     P = atoi(argv[3]);
-
+    
     int *arr = (int *) malloc(sizeof(int) * arr_size);
-
     int *arr2 = (int *) malloc(sizeof(int) * arr_size);
     srand(time(NULL));
-
-    /*int mythreads[5];
-    mythreads[0] = 1;
-    mythreads[1] = 2;
-    mythreads[2] = 4;
-    mythreads[3] = 8;
-    mythreads[4] = 16;*/
-    //for (int w = 0; w < 5; ++w) {
-    //  P = mythreads[w];
-    //  for (int q = 1000000; q < 10000000; q += 1000000) {
-    //    arr_size = q;
-    //  chank_size = q / 100;
-
+    
 //create array
     for (int i = 0; i < arr_size; ++i) {
         arr[i] = rand() % 100;
@@ -255,8 +216,6 @@ int main(int argc, char* argv[]) {
 //sorting, using OMP
     double whole_time = omp_get_wtime();
 
-    //printArray(arr, arr_size);
-    //printf("ready\n");
     paralSortArgs args;
     args.arr = arr;
     args.chank_sz = chank_size;
@@ -266,18 +225,7 @@ int main(int argc, char* argv[]) {
     args.threadsExist = 1;
     args.max_threads = P;
 
-    /*arr[0] = 9;
-    arr[1] = 8;
-    arr[2] = 7;
-    arr[3] = 6;
-    arr[4] = 5;
-    arr[5] = 4;
-    arr[6] = 3;
-    arr[7] = 2;
-    arr[8] = 1;
-    arr[9] = -1;
-    memcpy(arr2, arr, 10*sizeof(int));*/
-
+    
     printArray(arr, arr_size);
     printf("\n\n");
     initParallelSort((void *) &args);
@@ -314,9 +262,6 @@ int main(int argc, char* argv[]) {
     fprintf(file2, "%f %f %d %d %d \n", whole_time_of_parallelSort, whole_time, \
         arr_size, chank_size, P);
     fclose(file2);
-
-    //   }
-    //}
     free(arr);
     free(arr2);
     return 0;

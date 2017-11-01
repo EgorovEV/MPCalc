@@ -46,13 +46,14 @@ void mysort(int *arr, int l, int r){
 void* merge_from_left(void *args){
 
     args_for_merge *chank = (args_for_merge*) args;
-
+    int amount_of_responsible_elements = (chank->r - chank->l) / 2 + 1;
     int i_l, j_l, k_l;
     i_l = 0; // Initial index of first subarray goes from left
     j_l = 0; // Initial index of second subarray goes from left
     k_l = chank->l; // Initial index of merged subarray goes from left
 
-    while (42 == 42) {
+    while (amount_of_responsible_elements > 0) {
+        --amount_of_responsible_elements;
         if (chank->L[i_l] < chank->R[j_l]) {
             *(chank->arr_begin + k_l) = chank->L[i_l];
             ++i_l;
@@ -71,13 +72,14 @@ void* merge_from_left(void *args){
 
 void* merge_from_right(void *args) {
     args_for_merge *chank = (args_for_merge *) args;
-
+    int amount_of_responsible_elements = (chank->r - chank->l) / 2 + 1;
     int i_r, j_r, k_r;
     i_r = chank->n1 - 1; // Initial index of first subarray goes from right
     j_r = chank->n2 - 1; // Initial index of second subarray goes from right
     k_r = chank->r; // Initial index of merged subarray goes from right
 
-    while (42 == 42) {
+    while (amount_of_responsible_elements > 0) {
+        --amount_of_responsible_elements;
         if (chank->L[i_r] >= chank->R[j_r]) {
             *(chank->arr_begin + k_r) = chank->L[i_r];
             --i_r;
@@ -242,8 +244,7 @@ int main(int argc, char* argv[]) {
         arr_size, chank_size, P);
     fclose(file2);
 
-    //   }
-    //}
+
     free(arr);
     free(arr2);
     return 0;

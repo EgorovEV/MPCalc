@@ -20,37 +20,50 @@ void printArray(void *d){
   printf("\n\n");
 }
 
+//printf amount of particles in each node
+void printAns(void *d){
+  info *data = d;
+  int *ans = (int*)malloc(data->a * data->b * sizeof(int));
+  for (int  i =0; i < data->a *data->b; ++i)
+        ans[i] = 0;
+  for (int i=0; i < data->N * data->a * data->b; ++i){
+                int pos_x = data->particles_loc[i*2];
+                int pos_y = data->particles_loc[i*2 + 1];
+                int chest_x =  (int) floor(pos_x / (double)data->l);
+                int chest_y =  (int) floor(pos_y / (double)data->l);
+                ++ans[chest_y * data->a + chest_x];
+  }
+  for (int i=0; i < data->a * data->b; ++i)
+        printf("%d ", ans[i]);
+  printf("\n\n");
+
+}
+
+
 int initialization(void *d){
   info *data = d;
   memset(data->particles_loc, 0, sizeof(data->particles_loc));
   srand(time(NULL));
 
   int inner_x, inner_y;
+  //fill array with random numbers
   int chest_num = -1;
   for (int i=0; i < data->N * data->a * data->b; ++i){
         if (i % data->N == 0)
           ++chest_num;
 
         int chest_num_x = chest_num % data->a;
-        int chest_num_y = (int)floor(chest_num / (float)data->b);
-
+        int chest_num_y = (int) chest_num / (float)data->a;
         inner_x = ((rand() % data->l) + chest_num_x * data->l);
         inner_y = ((rand() % data->l) + chest_num_y * data->l);
         data->particles_loc[i * 2] = inner_x;
         data->particles_loc[i * 2 + 1] = inner_y;
   }
-
-  int *seeds = (int*) malloc(data->numprocs * sizeof(int));
-  for (int i=0; i < data->numprocs; ++i){
-        seeds[i] = rand();
-  }
-  //give seeds for all;
-  MPI_Scatter(seeds, 1, MPI_INT, &data->seed, 1, MPI_INT, 0, MPI_COMM_WORLD);
 }
 
 int simple_module_capture(int number, int module){
   if (number < 0)
-        return module - number;
+        return module + number;
   return (number % module);
 }
 
@@ -67,7 +80,6 @@ void go_random(void *d){
   step[2][1] = 1;
   step[3][0] = 0;
   step[3][1] = -1;
-
   srand(data->seed);
 
   int particles_amount = data->a * data->b * data->N;
@@ -91,6 +103,8 @@ void go_random(void *d){
         }
   }
 }
+
+
 
 
 int main(int argc, char *argv[])
@@ -126,26 +140,38 @@ int main(int argc, char *argv[])
   MPI_Datatype datatype;
   MPI_Type_contiguous(2 * data.a * data.b * data.N, MPI_INT, &datatype);
   MPI_Type_commit(&datatype);
-  //printf("commit_type\n");
+  int *seeds;
+  
   if (myid == 0) {
-                for (int to_proc = 1; to_proc < data.numprocs; ++to_proc)
-          MPI_Send(data.particles_loc, 1, datatype, to_proc, 0, MPI_COMM_WORLD);
-        printArray(&data);
+        //generate location, and send it to others
+        for (int to_proc = 1; to_proc < data.numprocs; ++to_proc)
+        MPI_Send(data.particles_loc, 1, datatype, to_proc, 0, MPI_COMM_WORLD);
+        printf("BEGIN:\n");
+        printAns(&data);
+        seeds = (int*) malloc(data.numprocs * sizeof(int));
+        for (int i=0; i < data.numprocs; ++i){
+          seeds[i] = rand();
+        }
   } else {
+        //recv location of particles from master 
         MPI_Recv(data.particles_loc, 1, datatype, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
   }
+   //give seeds from master to all;
+  MPI_Scatter(seeds, 1, MPI_INT, &data.seed, 1, MPI_INT, 0, MPI_COMM_WORLD);
+
   MPI_Barrier(MPI_COMM_WORLD);
   go_random(&data);
   MPI_Barrier(MPI_COMM_WORLD);
-
+  
+  
   int particles_amount = data.a * data.b * data.N;
-  int chank_size = (int) floor((particles_amount) / (float)data.numprocs);
+  //size of sending data
+  int chank_size = (int) floor((particles_amount) / (float)data.numprocs); 
   if (particles_amount % data.numprocs !=0)
     ++chank_size;
 
-
   MPI_Datatype return_datatype;
-  MPI_Type_contiguous(chank_size * 2, MPI_INT, &return_datatype);
+  MPI_Type_contiguous(chank_size * 2, MPI_INT, &return_datatype); 
   MPI_Type_commit(&return_datatype);
 
   MPI_Datatype return_tail_datatype;
@@ -154,10 +180,10 @@ int main(int argc, char *argv[])
 
   if (myid != 0){
         if (data.myid == data.numprocs - 1 && (particles_amount % chank_size) != 0){
-                MPI_Send(&data.particles_loc[data.myid *2* chank_size], 1, return_tail_datatype, 0, 0, MPI_COMM_WORLD);
-    }
-        else{
-                MPI_Send(&data.particles_loc[data.myid *2* chank_size], 1, return_datatype, 0, 0, MPI_COMM_WORLD);
+          MPI_Send(&data.particles_loc[data.myid *2* chank_size], 1, return_tail_datatype, 0, 0, MPI_COMM_WORLD);     
+        } else {
+          //send tail. It has different size, so it has own datatype
+          MPI_Send(&data.particles_loc[data.myid *2* chank_size], 1, return_datatype, 0, 0, MPI_COMM_WORLD);      
         }
   } else {
         int *buf = (int*)malloc(chank_size *2* sizeof(int));
@@ -165,7 +191,7 @@ int main(int argc, char *argv[])
           MPI_Recv(buf, 1, return_datatype, from_proc, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
           memcpy(&data.particles_loc[from_proc *2* chank_size], buf, chank_size *2* sizeof(int));
         }
-
+        //work with tail
         if ((particles_amount % chank_size) != 0){
           MPI_Recv(buf, 1, return_tail_datatype, data.numprocs - 1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
           memcpy(&data.particles_loc[(data.numprocs-1) *2* chank_size], buf, 2*(particles_amount % chank_size) * sizeof(int));
@@ -177,8 +203,8 @@ int main(int argc, char *argv[])
 
   MPI_Finalize();
   if (data.myid == 0){
-        printf("finish\n");
-        printArray(&data);
+        printf("END:\n");
+        printAns(&data);
   }
   return 0;
 }

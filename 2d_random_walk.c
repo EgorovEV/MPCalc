@@ -86,17 +86,17 @@ void go_random(void *d){
   int chank_size = (int) floor((particles_amount) / (float)data->numprocs);
   if (particles_amount % data->numprocs !=0)
         ++chank_size;
-  for (int walk_time = 0; walk_time <= data->n; ++walk_time)
+  for (int walk_time = 0; walk_time < data->n; ++walk_time)    
   {
         for (int partic_num = data->myid * chank_size; partic_num < particles_amount && partic_num < (data->myid + 1) * chank_size; ++partic_num)
         {
           float r = rand() / (float)RAND_MAX ;
           dest = 3;
-          if (r < data->pu)
+          if (r <= data->pu)
                 dest = 2;
-          if (r < data->pr)
+          if (r <= data->pr)
                 dest = 1;
-          if (r < data->pl)
+          if (r <= data->pl)
                  dest = 0;
           data->particles_loc[partic_num * 2] = simple_module_capture(data->particles_loc[partic_num * 2] + step[dest][0], data->a * data->l);
           data->particles_loc[partic_num * 2 + 1] = simple_module_capture(data->particles_loc[partic_num * 2 + 1] + step[dest][1], data->b * data->l);

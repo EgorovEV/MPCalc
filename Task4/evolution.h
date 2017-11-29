@@ -6,6 +6,7 @@
 #define HOMEWORKS_5SEM_POPULATION_H
 
 #include "graph.h"
+#include "threadpool.h"
 
 typedef struct evolution {
     //fields
@@ -18,7 +19,7 @@ typedef struct evolution {
 } evolution;
 
 //ДА КАКОГОЖ ЧЕРТА В СИШНЫХ СТРУКТУРАХ НЕТ МЕТОДОВ?! АААААААААААА
-//ГДЕ КОНСТРУКТОРЫ?! КАК СОЗДАТЬ КОНЧТАНТНЫЕ ПОЛЯ? >_<
+//ГДЕ КОНСТРУКТОРЫ?! КАК СОЗДАТЬ КОНСТАНТНЫЕ ПОЛЯ? >_<
 
 //methods
 void evolution_init(evolution* evo, graph_t*, const int, const int, const float);

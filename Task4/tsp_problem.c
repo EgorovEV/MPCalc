@@ -7,8 +7,12 @@
 
 #include "graph.h"
 #include "evolution.h"
+#include "threadpool.h"
+//ТАМ srand в начале стоит! не забыть!
+
 
 int main(int argc, char *argv[]){
+    srand(time(NULL));
     int pthreads;         //Не забыть условие для дополнительных потоков
     int N;                //начальный размер популяции
     int S;                //параметр для критерия остановки

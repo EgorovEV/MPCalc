@@ -6,6 +6,8 @@
 #include "evolution.h"
 #include "myrand.h"
 
+void swap_mutation(int*, int, int);
+
 //граф подается на вход уже заполненным
 void evolution_init(evolution* evo, graph_t* graph, const int population_size, const int old_survivals, const float mutations){
     int x = graph->n;
@@ -15,7 +17,7 @@ void evolution_init(evolution* evo, graph_t* graph, const int population_size, c
     evo->essences_amount = population_size;
     evo->rouds = graph;
     evo->population = (int*)malloc(population_size * graph->n * sizeof(int));
-    //TODO ТЕСТОВАЯ ВЫЮОРКА!!!
+    //TODO ТЕСТОВАЯ ВЫБОРКА!!!
     //ПОМЕНЯТЬ!
     for (int i =0; i< evo->essences_amount * evo->essence_len; ++i){
         evo->population[i] = i;
@@ -38,11 +40,10 @@ void mutation(evolution* evo){
             int city1 = get_rand() % evo->essence_len;
             int city2 = get_rand() % evo->essence_len;
             printf("swap in es = %d; town1 = %d, town2 = %d\n", i, city1, city2);
-            //зафигачить в тредпул!
-            //а пока что, втупую, ибо 4 час ночи
-            int tmp = evo->population[i * evo->essence_len + city1];
-            evo->population[i * evo->essence_len + city1] = evo->population[i * evo->essence_len + city2];
-            evo->population[i * evo->essence_len + city2] = tmp;
+
+            if (city1 != city2)     //если равно, то считаю, что повезло
+                swap_mutation(&evo->population[i * evo->essence_len], city1, city2);
+
         }
     }
 
@@ -56,4 +57,11 @@ void mutation(evolution* evo){
 
 void crossover(evolution* evo){
     printf("crossover!\n");
+}
+
+
+void swap_mutation(int* essence, int city1, int city2){
+    int tmp = essence[city1];
+    essence[city1] = essence[city2];
+    essence[city2] = tmp;
 }

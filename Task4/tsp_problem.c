@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <pthread.h>
+#include <assert.h>
 
 #include "graph.h"
 #include "evolution.h"
@@ -26,8 +27,11 @@ int main(int argc, char *argv[]){
         mygraph = graph_generate(atoi(argv[5]), 10);
     }
     evolution evo;
-    evolution_init(&evo, mygraph, N, N/2, 2);
+    printGraph(mygraph);
+    printf("\n");
+    evolution_init(&evo, mygraph, N, N/2, 0.5);
     mutation(&evo);
+    printGraph(mygraph);
     crossover(&evo);
     selection(&evo);
 

@@ -32,4 +32,5 @@ graph_t *graph_read_file(const char *filename);
 void graph_dump(const graph_t *g, FILE *f);
 void graph_dump_file(const graph_t *g, const char *filename);
 
+void printGraph(graph_t*);
 #endif

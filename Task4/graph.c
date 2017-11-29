@@ -99,3 +99,13 @@ void graph_destroy(graph_t *g)
     free(g->weights);
     free(g);
 }
+
+//my own
+void printGraph(graph_t* g){
+    for (int i = 0; i < g->n; i++) {
+        for (int j = 0; j < g->n; j++) {
+            printf("%d ", graph_weight(g, i, j));
+        }
+        printf("\n");
+    }
+}

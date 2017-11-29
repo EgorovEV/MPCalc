@@ -14,14 +14,14 @@ typedef struct evolution {
     int essence_len;            //
     int essences_amount;  //количество особей- городов
     int best_essences;    //количество оставшихся в живых лучших особей- маршрутов после селекции
-    int mutation_factor;  //количество поменявшихся местами "генов"- городов
+    float mutation_factor;  //вероятность поменять"гены"(города) местами
 } evolution;
 
 //ДА КАКОГОЖ ЧЕРТА В СИШНЫХ СТРУКТУРАХ НЕТ МЕТОДОВ?! АААААААААААА
 //ГДЕ КОНСТРУКТОРЫ?! КАК СОЗДАТЬ КОНЧТАНТНЫЕ ПОЛЯ? >_<
 
 //methods
-void evolution_init(evolution* evo, graph_t*, int, int, int);
+void evolution_init(evolution* evo, graph_t*, const int, const int, const float);
 
 void selection(evolution*);
 void mutation(evolution*);

@@ -3,6 +3,7 @@
 //
 
 #include <stdlib.h>
+#include <zconf.h>
 #include "evolution.h"
 #include "myrand.h"
 #include "threadpool.h"
@@ -30,34 +31,37 @@ void selection(evolution* evo){
 }
 
 void mutation(evolution* evo){
-    for (int i =0; i< evo->essences_amount * evo->essence_len; ++i){
+    /*for (int i =0; i< evo->essences_amount * evo->essence_len; ++i){
         if (i % evo->essence_len == 0)
             printf("\n");
         printf("%d ", evo->population[i]);
-    }
+    }*/
+
 
     for (int i=0; i < evo->essences_amount; ++i) {
         if ((get_rand() / (float) RAND_MAX) < evo->mutation_factor) {
             printf("starte mutate in i = %d\n", i);
 
-            int mut_es = i;
-            args_mutation args;
-            args.mutation_essence = mut_es;     //так. почему-то не хочет создавать новый эземпляяр
-            args.evo = evo;         //В итоге, во всех потоках лежит одинаковое значение особи
+            args_mutation *args;
+            args = (args_mutation*)malloc(sizeof(args_mutation));
+            args->essence = &evo->population[i * evo->essence_len];
+            args->essence_len = evo->essence_len;
 
-            //добавить чекер на ошибки
-            threadpool_add(evo->threadpool, &swap_mutation, (void*) &args);
+            int err = threadpool_add(evo->threadpool, &swap_mutation, (void*) args);
+            if (err!=0)
+                printf("AAAAAAAAAAAAAAAAAAAAAAAAAAAAA!!!!!!!!!!!!!!!!!!\n");
         }
     }
 
-    threadpool_destroy(evo->threadpool);  //TODO убрать отсюда в конец работы
+    //threadpool_barier(evo->threadpool);
+    wait_all(evo->threadpool);
 
-    for (int i =0; i< evo->essences_amount * evo->essence_len; ++i){
+    /*for (int i =0; i< evo->essences_amount * evo->essence_len; ++i){
         if (i % evo->essence_len == 0)
             printf("\n");
         printf("%d ", evo->population[i]);
     }
-    printf("\n");
+    printf("\n");*/
 }
 
 void crossover(evolution* evo){
@@ -68,12 +72,14 @@ void crossover(evolution* evo){
 void swap_mutation(void* args){
     args_mutation* arg = (args_mutation*) args;
 
-    int city1 = get_rand() % arg->evo->essence_len;
-    int city2 = get_rand() % arg->evo->essence_len;
+    int city1 = get_rand() % arg->essence_len;
+    int city2 = get_rand() % arg->essence_len;
 
-    printf("swap in es = %d; town1 = %d, town2 = %d\n", arg->mutation_essence, city1, city2);
-    int tmp = arg->evo->population[arg->mutation_essence * arg->evo->essence_len + city1];
-    arg->evo->population[arg->mutation_essence * arg->evo->essence_len + city1]
-            = arg->evo->population[arg->mutation_essence * arg->evo->essence_len + city2];
-    arg->evo->population[arg->mutation_essence * arg->evo->essence_len + city2] = tmp;
+    int tmp = arg->essence[city1];
+    arg->essence[city1] = arg->essence[city2];
+    arg->essence[city2] = tmp;
+}
+
+void endWork(evolution* evo){
+    threadpool_destroy(evo->threadpool);
 }

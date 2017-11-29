@@ -26,6 +26,7 @@ typedef struct queue_implementation{
 typedef struct threadpool_t {
     pthread_mutex_t lock;
     pthread_cond_t notify;      //местный conditional veriable
+    pthread_cond_t collect_all;
     pthread_t *threads;
     threadpool_task_t *queue;
     int thread_count;           //количество потоков
@@ -35,11 +36,16 @@ typedef struct threadpool_t {
     int count;                  //количество ожидающих потоков
     int shutdown;               //Индикатор завершения работы-> "удаляем очередь"
     int started;                //количество стартовых потоков
+    int started_but_not_working;
 } threadpool_t;
 
 threadpool_t* threadpool_create(int, int);
 int threadpool_add(threadpool_t*, void (*function)(void *),void*);
 int threadpool_destroy(threadpool_t*);
+//int threadpool_barrier(threadpool_t*);
+
+void threadpool_barier(threadpool_t*);
+void wait_all(threadpool_t*);
 
 
 

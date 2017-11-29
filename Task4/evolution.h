@@ -20,7 +20,6 @@ typedef struct evolution {
 } evolution;
 
 //ДА КАКОГОЖ ЧЕРТА В СИШНЫХ СТРУКТУРАХ НЕТ МЕТОДОВ?! АААААААААААА
-//ГДЕ КОНСТРУКТОРЫ?! КАК СОЗДАТЬ КОНСТАНТНЫЕ ПОЛЯ? >_<
 
 //methods
 void evolution_init(evolution* evo, graph_t*, const int, const int, const float, int);
@@ -28,10 +27,11 @@ void evolution_init(evolution* evo, graph_t*, const int, const int, const float,
 void selection(evolution*);
 void mutation(evolution*);
 void crossover(evolution*);
+void endWork(evolution*);
 
 typedef struct task_mutation {
-    evolution* evo;
-    int mutation_essence;
+    int* essence;
+    int essence_len;
 } args_mutation;
 
 #endif //HOMEWORKS_5SEM_POPULATION_H

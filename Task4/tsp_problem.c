@@ -34,11 +34,13 @@ int main(int argc, char *argv[]){
     printGraph(mygraph);
     printf("\n");
     evolution_init(&evo, mygraph, N, N/2, 0.5, pthreads);   //не забыть условие для доп потоков!
+
     mutation(&evo);
     printGraph(mygraph);
     crossover(&evo);
     selection(&evo);
 
+    endWork(&evo);
 
     printf("Hello, world!\n");
     return 0;

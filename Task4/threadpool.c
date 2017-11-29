@@ -27,14 +27,17 @@ threadpool_t* threadpool_create(int thread_count, int queue_size)
     pool->head = pool->tail = pool->count = 0;
     pool->shutdown = 0; //==false
     pool->started = 0;
+    pool->started_but_not_working = 0;
 
     // Allocate thread and task queue
     pool->threads = (pthread_t *)malloc(thread_count * sizeof(pthread_t));
     pool->queue = (threadpool_task_t *)malloc(queue_size * sizeof(threadpool_task_t));
 
+
     /* Initialize mutex and conditional variable first */
     pthread_mutex_init(&(pool->lock), NULL);
     pthread_cond_init(&(pool->notify), NULL);
+    pthread_cond_init(&pool->collect_all, NULL);
 
 
     /* Start worker threads */
@@ -90,7 +93,6 @@ int threadpool_destroy(threadpool_t* pool) {
         return threadpool_lock_failure;
     }
 
-    /* Already shutting down */
     if (pool->shutdown)
         return threadpool_shutdown;
 
@@ -136,28 +138,48 @@ int threadpool_free(threadpool_t *pool)
     return 0;
 }
 
+/*
+void threadpool_barier(threadpool_t *pool) {
+    printf("asfdasdfghjkl;lkjhgfds\n");
+    pthread_barrier_wait(&pool->mybarrier);
+    //printf("delete this\n"); //todo !
+}*/
+
+void wait_all(threadpool_t* pool){
+    pthread_mutex_lock(&pool->lock);
+    //надо подождать пока все потоки не освободятся
+    while (pool->count != 0 || pool->started_but_not_working < pool->thread_count) {
+        pthread_cond_wait(&pool->collect_all, &pool->lock);
+    }
+    pthread_mutex_unlock(&pool->lock);
+}
+
 
 static void *threadpool_thread(void *threadpool)
 {
     threadpool_t *pool = (threadpool_t *)threadpool;
     threadpool_task_t task;
 
+
     for(;;) {
         /* Lock must be taken to wait on conditional variable */
         pthread_mutex_lock(&(pool->lock));
-
+        if (++pool->started_but_not_working == pool->thread_count)
+            pthread_cond_signal(&pool->collect_all);
         /* Wait on condition variable, check for spurious wakeups.
            When returning from pthread_cond_wait(), we own the lock. */
-        while((pool->count == 0) && (!pool->shutdown)) {
+        while((pool->count == 0) && (!pool->shutdown)) {  //Э
+            //printf("qwe]\n");
             pthread_cond_wait(&(pool->notify), &(pool->lock));
         }
-
+        //printf("aaaasssddd]\n");
         if((pool->shutdown == 1) &&
             (pool->count == 0)) {
             break;
         }
 
         /* Grab our task */
+        --pool->started_but_not_working;
         task.function = pool->queue[pool->head].function;
         task.argument = pool->queue[pool->head].argument;
         pool->head = (pool->head + 1) % pool->queue_size;
@@ -167,7 +189,6 @@ static void *threadpool_thread(void *threadpool)
         pthread_mutex_unlock(&(pool->lock));
 
         /* Get to work */
-        printf("go to work!\n");
         (*(task.function))(task.argument);
     }
 

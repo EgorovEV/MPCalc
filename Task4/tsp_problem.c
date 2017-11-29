@@ -8,6 +8,10 @@
 #include "graph.h"
 #include "evolution.h"
 #include "threadpool.h"
+
+#define BEST_ACTIVITY_NOW 1
+#define SLEEPIN 1
+//TODO разобраться с рандомом
 //ТАМ srand в начале стоит! не забыть!
 
 
@@ -30,16 +34,21 @@ int main(int argc, char *argv[]){
     if (!strcmp(argv[4], "--generate") || !strcmp(argv[4], "-f")) {
         mygraph = graph_generate(atoi(argv[5]), 10);
     }
+
     evolution evo;
     printGraph(mygraph);
     printf("\n");
     evolution_init(&evo, mygraph, N, N/2, 0.5, pthreads);   //не забыть условие для доп потоков!
 
-    mutation(&evo);
-    printGraph(mygraph);
-    crossover(&evo);
-    selection(&evo);
-
+    int tmp_steps = 3;
+    int step = 0;
+    while (BEST_ACTIVITY_NOW == SLEEPIN) {
+        crossover(&evo);
+        selection(&evo);
+        mutation(&evo);
+        if (++step == tmp_steps)
+            break;
+    }
     endWork(&evo);
 
     printf("Hello, world!\n");

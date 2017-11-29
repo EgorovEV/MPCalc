@@ -12,7 +12,7 @@ typedef struct evolution {
     //fields
     graph_t* rouds;              //указатель на граф дорог.
     int* population;            //популяция - маршруты
-    int essence_len;            //
+    int essence_len;
     int essences_amount;  //количество особей- городов
     int best_essences;    //количество оставшихся в живых лучших особей- маршрутов после селекции
     float mutation_factor;  //вероятность поменять"гены"(города) местами
@@ -33,5 +33,12 @@ typedef struct task_mutation {
     int* essence;
     int essence_len;
 } args_mutation;
+
+typedef struct task_caclWeight {
+    int* essence;
+    int essence_len;
+    int ans;
+    graph_t* pathes;
+} args_weight;
 
 #endif //HOMEWORKS_5SEM_POPULATION_H

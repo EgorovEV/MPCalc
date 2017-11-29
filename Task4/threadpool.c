@@ -52,7 +52,7 @@ threadpool_t* threadpool_create(int thread_count, int queue_size)
 
 int threadpool_add(threadpool_t *pool, void (*function)(void *),void *argument) {
     //checking errors
-    printf("Start adding to pool\n");
+    //printf("Start adding to pool\n");
     if (pool == NULL || function == NULL) {
         return threadpool_invalid;
     }

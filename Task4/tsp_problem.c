@@ -33,7 +33,7 @@ int main(int argc, char *argv[]){
     evolution evo;
     printGraph(mygraph);
     printf("\n");
-    evolution_init(&evo, mygraph, N, N/2, 0.5);
+    evolution_init(&evo, mygraph, N, N/2, 0.5, pthreads);   //не забыть условие для доп потоков!
     mutation(&evo);
     printGraph(mygraph);
     crossover(&evo);

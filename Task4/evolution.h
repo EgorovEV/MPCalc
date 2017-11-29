@@ -16,17 +16,22 @@ typedef struct evolution {
     int essences_amount;  //количество особей- городов
     int best_essences;    //количество оставшихся в живых лучших особей- маршрутов после селекции
     float mutation_factor;  //вероятность поменять"гены"(города) местами
+    threadpool_t* threadpool;
 } evolution;
 
 //ДА КАКОГОЖ ЧЕРТА В СИШНЫХ СТРУКТУРАХ НЕТ МЕТОДОВ?! АААААААААААА
 //ГДЕ КОНСТРУКТОРЫ?! КАК СОЗДАТЬ КОНСТАНТНЫЕ ПОЛЯ? >_<
 
 //methods
-void evolution_init(evolution* evo, graph_t*, const int, const int, const float);
+void evolution_init(evolution* evo, graph_t*, const int, const int, const float, int);
 
 void selection(evolution*);
 void mutation(evolution*);
 void crossover(evolution*);
 
+typedef struct task_mutation {
+    evolution* evo;
+    int mutation_essence;
+} args_mutation;
 
 #endif //HOMEWORKS_5SEM_POPULATION_H

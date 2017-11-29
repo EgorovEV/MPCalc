@@ -2,8 +2,10 @@
 // Created by evgeniy on 29.11.17.
 //
 #include <stdlib.h>
+#include <stdio.h>
 #include <pthread.h>
 #include <unistd.h>
+#include <printf.h>
 
 #include "threadpool.h"
 
@@ -47,6 +49,7 @@ threadpool_t* threadpool_create(int thread_count, int queue_size)
 
 int threadpool_add(threadpool_t *pool, void (*function)(void *),void *argument) {
     //checking errors
+    printf("Start adding to pool\n");
     if (pool == NULL || function == NULL) {
         return threadpool_invalid;
     }
@@ -164,6 +167,7 @@ static void *threadpool_thread(void *threadpool)
         pthread_mutex_unlock(&(pool->lock));
 
         /* Get to work */
+        printf("go to work!\n");
         (*(task.function))(task.argument);
     }
 

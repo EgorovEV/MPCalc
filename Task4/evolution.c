@@ -39,22 +39,45 @@ void evolution_init(evolution* evo, graph_t* graph, const int population_size, c
     evo->threadpool = threadpool_create(threads, 100);
 }
 
-void selection(evolution* evo){
+void selection(evolution* evo) {
     //printf("nachali!\n");
-    int** weight = (int**)malloc(evo->essences_amount * sizeof(int*));
-    int* type_essence[2];
+    int **weight = (int **) malloc(evo->essences_amount * sizeof(int *));
+    int *type_essence[2];
     type_essence[0] = evo->population;
     type_essence[1] = evo->children;
+
+    /*printf("\n\n______________POPULATION_____________\n");
+    for (int i = 0; i < evo->essence_len * evo->essences_amount; ++i) {
+        if (i % evo->essence_len == 0) {
+            printf("\n");
+            //printf("  -> w = %d\n", *weight[i / evo->essence_len]);
+        }
+        printf("%d ", evo->population[i]);
+    }
+    printf("\n\n_______________CHILDREN______________\n");
+    for (int i = 0; i < evo->essence_len * evo->essences_amount; ++i) {
+        if (i % evo->essence_len == 0) {
+            printf("\n");
+            //printf("  -> w = %d\n", *weight[i / evo->essence_len]);
+        }
+        printf("%d ", evo->children[i]);
+    }
+    printf("\n\n");*/
+
+    int tmp_for_end_print = -1;
     //шаг 1.
     int counter_new_essence = 0;
-    int* new_generation = (int*)malloc(evo->essence_len * evo->essences_amount * sizeof(int));
+    int *new_generation = (int *) malloc(evo->essence_len * evo->essences_amount * sizeof(int));
+    for (int i =0; i < evo->essence_len*evo->essences_amount; ++i)
+        new_generation[i] = -3;
+
     for (int type_es = 0; type_es < 2; ++type_es) {
         for (int i = 0; i < evo->essences_amount; ++i) {
             args_weight *args;
             args = (args_weight *) malloc(sizeof(args_weight));
             args->essence_len = evo->essence_len;
             //args->essence = &evo->population[i * evo->essence_len];
-            args->essence = &((type_essence[type_es])[i*evo->essence_len]);
+            args->essence = &((type_essence[type_es])[i * evo->essence_len]);
             args->ans = 0;
             args->pathes = evo->rouds;
 
@@ -71,31 +94,79 @@ void selection(evolution* evo){
 
         qsort(sorted_weight, evo->essences_amount, sizeof(int), compare);
 
+        //printf("~~~~~~w:  ");
+        //for (int k = 0; k < evo->essences_amount; ++k)
+        //    printf("%d ", *weight[k]);
+        //printf("\n");
         int best_essences = evo->essences_amount / 2;
-        if (type_es == 1 && (evo->essences_amount)%2){
+        if (type_es == 1 && (evo->essences_amount) % 2) {
             ++best_essences;
         }
         int suitable_max = sorted_weight[best_essences];
 
+        //printf("-----sutable_max = %d\n", suitable_max);
+
+        tmp_for_end_print = sorted_weight[0];
         /*for (int i = 0; i < evo->essences_amount; ++i) {
             printf("%d ", sorted_weight[i]);
         }
         printf("\n");*/
         //printf("prepare for copy!\n");
 
-        for (int i = 0; i < evo->essences_amount; ++i){
-            if ((*weight[i] < suitable_max) && (best_essences)){
+        int *edge = (int*)malloc(evo->essences_amount * sizeof(int));
+        int counter_edge = 0;
+
+        for (int i = 0; i < evo->essences_amount; ++i) {
+            if ((*weight[i] < suitable_max) && (best_essences)) {
                 //printf("hello!\n");
-                memcpy(&new_generation[counter_new_essence*evo->essence_len],
-                       &(type_essence[type_es])[(i / evo->essences_amount) * evo->essence_len], evo->essence_len);
+                memcpy(&new_generation[counter_new_essence * evo->essence_len],
+                       &((type_essence[type_es])[i * evo->essence_len]), (size_t) evo->essence_len * sizeof(int));
+                /*printf("~~~~~~~~~~~~I COPY:~~~~~~~~~~~~~~~~~~~\n");
+                for(int j = 0; j < evo->essence_len; ++j){
+                    printf("%d ", (type_essence[type_es])[i * evo->essence_len + j]);
+                }
+                printf("\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");*/
                 //printf("hi\n");
                 ++counter_new_essence;
                 --best_essences;
             }
+            if ((*weight[i] == suitable_max) && (best_essences))
+                edge[counter_edge++] = i;                           //++
         }
+        if (best_essences != 0) {   //т.к. если сразу копировать пути с граничными весами, они могут заменить некоторые
+                //маленькие веса, т.к. копируем по порядку в неотсортированном массиве.
+            int inserted = 0;
+            while (best_essences > 0) {
+                memcpy(&new_generation[counter_new_essence * evo->essence_len],
+                       &(type_essence[type_es])[edge[inserted] * evo->essence_len], (size_t) evo->essence_len * sizeof(int));    //segf?
+
+
+                //printf("~~~~~~~~~~~~I ADDITONAL COPY:~~~~~~~~~~~~~~~~~~~\n");
+                for(int j = 0; j < evo->essence_len; ++j){
+                    printf("%d ", (type_essence[type_es])[edge[inserted] * evo->essence_len + j]);
+                }
+                //printf("\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
+
+                ++inserted;
+                --best_essences;
+                ++counter_new_essence;
+            }
+        }
+        //printf("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
     }
-    memcpy(evo->population, new_generation, evo->essence_len * evo->essences_amount);
-    printf("Selection! min waitght before= %d;\n", *weight[0]);
+
+    memcpy(&evo->population[0], &new_generation[0], evo->essence_len * evo->essences_amount * sizeof(int));
+    /*printf("IN SELECTION:\n");
+    printf("Pathes:\n");
+    for (int i = 0; i < evo->essence_len * evo->essences_amount; ++i) {
+        //printf("%d ", evo->population[i]);          //changed
+        printf("%d ", new_generation[i]);
+        if ((i+1) % evo->essence_len == 0 && i != 0) {
+            printf("  -> w = %d\n", *weight[i / evo->essence_len]);
+        }
+    }*/
+
+    printf("Selection! min waitght before= %d;\n\n", tmp_for_end_print);
 }
 
 void crossover(evolution* evo){
@@ -143,6 +214,8 @@ void mutation(evolution* evo){
     //threadpool_barier(evo->threadpool);
     wait_all(evo->threadpool);
 }
+
+
 
 void swap_mutation(void* args){
     args_mutation* arg = (args_mutation*) args;
@@ -227,4 +300,4 @@ void fulfillPopulation(evolution* evo){
             evo->population[j * array_size + k] = t;
         }
     }
- }
+}

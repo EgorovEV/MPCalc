@@ -4,13 +4,21 @@
 
 #include <stdlib.h>
 #include <zconf.h>
+#include <string.h>
 #include "evolution.h"
 #include "myrand.h"
 #include "threadpool.h"
+
+#define NO_GENE -2
 //TODO Сдалать освободение памяти!!!
+
 
 void swap_mutation(void*);
 void fitnes_func(void*);
+void crossover_func(void*);
+int compare (const void * a, const void * b) {
+    return ( *(int*)a - *(int*)b );
+}
 
 void fulfillPopulation(evolution*);
 //граф подается на вход уже заполненным
@@ -28,14 +36,6 @@ void evolution_init(evolution* evo, graph_t* graph, const int population_size, c
 }
 
 void selection(evolution* evo){
-    int* best_eseences_ind;
-    best_eseences_ind = (int*)malloc(evo->best_essences * sizeof(int));
-    for (int i =0; i < evo->best_essences; ++i)
-        best_eseences_ind[i] = 0; // back to school
-    //вычисляю фитнес функцию записываю по индесу (под номерм i вес i-ой особи)
-    //вычисляю x: #весов < x есть best_essences;
-    //забираю лучших
-
     int** weight = (int**)malloc(evo->essences_amount * sizeof(int*));
 
     for (int i = 0; i < evo->essences_amount; ++i){
@@ -50,9 +50,19 @@ void selection(evolution* evo){
         weight[i] = &args->ans;
     }
     wait_all(evo->threadpool);
+
+    int* sorted_weight = (int*)malloc(evo->essences_amount * sizeof(int));
     for (int i = 0; i < evo->essences_amount; ++i){
-        printf("ans = %d\n", *weight[i]);
+        sorted_weight[i] = *weight[i];
     }
+
+    qsort(sorted_weight, evo->essences_amount, sizeof(int), compare);
+
+    for (int i = 0; i < evo->essences_amount; ++i){
+        printf("%d ", sorted_weight[i]);
+    }
+    printf("\n");
+
     printf("Selection!\n");
 }
 
@@ -77,20 +87,35 @@ void mutation(evolution* evo){
                 printf("AAAAAAAAAAAAAAAAAAAAAAAAAAAAA!!!!!!!!!!!!!!!!!!\n");
         }
     }
-
     //threadpool_barier(evo->threadpool);
     wait_all(evo->threadpool);
-
-    /*for (int i =0; i< evo->essences_amount * evo->essence_len; ++i){
-        if (i % evo->essence_len == 0)
-            printf("\n");
-        printf("%d ", evo->population[i]);
-    }
-    printf("\n");*/
 }
 
 void crossover(evolution* evo){
-    printf("crossover!\n");
+    //PMX algo
+    //first step: take 2 parents; буду брать i и i+1 особь. а так же N-1 и 0-ую.
+    //second: 1 parent gives half of genom to child
+    //third: check func
+    int* children = (int*)malloc(evo->essence_len * evo->essences_amount * sizeof(int));
+    for (int i=0; i < evo->essence_len * evo->essences_amount; ++i)
+        children[i] = NO_GENE;
+
+    for (int i=0; i < evo->essences_amount; ++i){
+        args_crossover *args;
+        args = (args_crossover*)malloc(sizeof(args_crossover));
+        args->parent1 = &evo->population[i*evo->essence_len];
+        args->parent2 = &evo->population[((i+1) % (evo->essences_amount)) * evo->essence_len];
+        args->parent_len = evo->essence_len;
+        args->child = &children[i*evo->essence_len];
+        threadpool_add(evo->threadpool, &crossover_func, (void*) args);
+    }
+    wait_all(evo->threadpool);
+    for (int i = 0; i < evo->essence_len * evo->essences_amount; ++i){
+        if (i % evo->essence_len == 0)
+            printf("\n");
+        printf("%d ", children[i]);
+    }
+    printf("\ncrossover!\n");
 }
 
 
@@ -115,6 +140,70 @@ void fitnes_func(void* args){
     }
     arg->ans = answer;
     printf("In fitn, and = %d\n", arg->ans);
+}
+
+int findvalueinarray(int val, int *arr, int size){
+    for (int i=0; i < size; i++) {
+        if (arr[i] == val)
+            return i;
+    }
+    return 0;
+}
+
+void crossover_func(void* args){    //todo у нас ведь всегда четная длина особи... округление вниз
+    args_crossover* arg = (args_crossover*) args;
+    int width = (int)(arg->parent_len*0.5);
+    int start_copy = rand() % (int)(width);
+    memcpy(&arg->child[start_copy], &arg->parent1[start_copy], width * sizeof(int));
+
+    int index_in_p2;
+    int gen_in_p1, ind_gen_in_p2, gen_in_p2;
+    printf("in crossover\n");
+    for (int i = 0; i < arg->parent_len; ++i){
+        printf("%d ", arg->parent1[i]);
+    }
+    printf("\n");
+    for (int i = 0; i < arg->parent_len; ++i){
+        printf("%d ", arg->parent2[i]);
+    }
+    printf("\n");
+    for (int i = 0; i < arg->parent_len; ++i){
+        printf("%d ", arg->child[i]);
+    }
+    printf("\n");
+
+    for (int i = start_copy; i < start_copy + width; ++i){      //распределяем по потомку уникальные гены род2.
+        if (!findvalueinarray(arg->parent2[i], arg->child, arg->parent_len)){ //если в родителе2 нашелся новый ген(город)
+            index_in_p2 = i;                                                     //берем индекс этого гена
+            while (1) {                                 //пока на найдем место
+                //printf("searching..\n");
+                gen_in_p1 = arg->parent1[index_in_p2];                         //берем ген из род1,с индексом нового гена в род2.
+                ind_gen_in_p2 = findvalueinarray(gen_in_p1, arg->parent2, arg->parent_len);   //ищем индекс этого гена в род2(во всём)
+                gen_in_p2 = arg->parent2[ind_gen_in_p2];                         //берем это ген
+                //printf("gen_in_p2=%d\n", gen_in_p2);
+                if (!findvalueinarray(gen_in_p2, arg->child, arg->parent_len)) {   //если его ещё нет в потомке
+                    arg->child[ind_gen_in_p2] = arg->parent2[i];         //то по новому индексу вставляем,
+                    printf("Get it!\n");
+                    for (int i = 0; i < arg->parent_len; ++i){
+                        printf("%d ", arg->child[i]);
+                    }
+                    printf("\n");
+                    break;                                                        // найденный ещё в начале, уникальный элемент
+                } else {
+                    //NO!!! //index_in_p2 = findvalueinarray(gen_in_p2, arg->child, arg->parent_len);
+                    index_in_p2 = gen_in_p2;
+
+                }
+            }
+        } else {
+            printf("skip\n");
+        }
+    }
+
+    for (int i=0; i < arg->parent_len; ++i){
+        if(arg->child[i] == NO_GENE)
+            arg->child[i] = arg->parent2[i];
+    }
 }
 
 

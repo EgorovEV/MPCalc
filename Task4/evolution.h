@@ -41,4 +41,11 @@ typedef struct task_caclWeight {
     graph_t* pathes;
 } args_weight;
 
+typedef struct task_crossover {
+    int* parent1;
+    int* parent2;
+    int parent_len;
+    int* child;
+} args_crossover;
+
 #endif //HOMEWORKS_5SEM_POPULATION_H

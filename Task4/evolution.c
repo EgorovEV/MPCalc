@@ -66,6 +66,8 @@ void selection(evolution* evo) {
 
     int tmp_for_end_print = -1;
     int minim = 1000000;
+    int max = 0;
+    int avg = 0;
     //шаг 1.
     int counter_new_essence = 0;
     int *new_generation = (int *) malloc(evo->essence_len * evo->essences_amount * sizeof(int));
@@ -100,9 +102,13 @@ void selection(evolution* evo) {
 
         for (int i = 0; i < evo->essences_amount; ++i) {
             sorted_weight[i] = *weight[i];
-            if (sorted_weight[i]< minim)
+            avg += sorted_weight[i];
+            if (sorted_weight[i] < minim)
                 minim = sorted_weight[i];
+            if (sorted_weight[i] > max)
+                max = sorted_weight[i];
         }
+        avg = avg/(evo->essences_amount);
         //printf("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~MINIM = %d", minim);
 
         qsort(sorted_weight, evo->essences_amount, sizeof(int), compare);
@@ -181,6 +187,9 @@ void selection(evolution* evo) {
     if (minim <= evo->minimum) {
         evo->minimum = minim;
     }
+    evo->maximum = max;
+    evo->average = avg;
+
     free(weight);
     free(new_generation);
 
@@ -232,8 +241,6 @@ void mutation(evolution* evo){
 
     //printf("\n\n");
 }
-
-
 
 void swap_mutation(void* args){
     args_mutation* arg = (args_mutation*) args;
@@ -340,6 +347,12 @@ void fulfillPopulation(evolution* evo){
 
 int minpath(evolution* evo){
     return evo->minimum;
+}
+int maxpath(evolution* evo){
+    return evo->maximum;
+}
+int avgpath(evolution* evo){
+    return evo->average;
 }
 
 int endWork(evolution* evo){

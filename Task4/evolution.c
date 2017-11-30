@@ -320,29 +320,6 @@ void fulfillPopulation(evolution* evo){
             evo->population[j * array_size + k] = t;
         }
     }
-    int shit = 0;
-    int shit_happend = -1;
-    for (int k =0; k < evo->essences_amount; ++k) {
-        for (int i = 0; i < evo->essence_len; ++i) {
-            for (int j = i + 1; j < evo->essence_len; ++j) {
-                if (evo->population[k*evo->essence_len + i] == evo->population[k*evo->essence_len + j]) {
-                    printf("\n------------SHIT!---------\n");
-                    printf("in ess:");
-                    shit = 1;
-                    shit_happend = k;
-                    break;
-                }
-            }
-        }
-    }
-    if (shit) {
-        for (int i = 0; i < evo->essence_len; ++i) {
-            if (i % evo->essence_len == 0)
-                printf("\n");
-            printf("%d ", evo->population[shit_happend*evo->essence_len + i]);
-        }
-    }
-    printf("\n");
 }
 
 int minpath(evolution* evo){

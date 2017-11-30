@@ -36,16 +36,17 @@ int main(int argc, char *argv[]){
     }
 
     evolution evo;
-    printGraph(mygraph);
+    //printGraph(mygraph);
     printf("\n");
-    evolution_init(&evo, mygraph, N, N/2, 0.5, pthreads);   //не забыть условие для доп потоков!
+    evolution_init(&evo, mygraph, N, N/2, 0.05, pthreads);   //не забыть условие для доп потоков!
 
-    int tmp_steps = 3;
+    int tmp_steps = 100;
     int step = 0;
     while (BEST_ACTIVITY_NOW == SLEEPIN) {
         crossover(&evo);
         selection(&evo);
         mutation(&evo);
+        printf("%d\n", minpath(&evo));
         if (++step == tmp_steps)
             break;
     }

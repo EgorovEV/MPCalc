@@ -18,6 +18,7 @@ typedef struct evolution {
     //int best_essences;    //количество оставшихся в живых лучших особей- маршрутов после селекции// буду брать половину
     float mutation_factor;  //вероятность поменять"гены"(города) местами
     threadpool_t* threadpool;
+    int minimum;
 } evolution;
 
 //ДА КАКОГОЖ ЧЕРТА В СИШНЫХ СТРУКТУРАХ НЕТ МЕТОДОВ?! АААААААААААА
@@ -28,7 +29,8 @@ void evolution_init(evolution* evo, graph_t*, const int, const int, const float,
 void selection(evolution*);
 void mutation(evolution*);
 void crossover(evolution*);
-void endWork(evolution*);
+int minpath(evolution*);
+int endWork(evolution*);
 
 typedef struct task_mutation {
     int* essence;

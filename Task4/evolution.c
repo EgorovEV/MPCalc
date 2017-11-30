@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <zconf.h>
 #include <string.h>
+#include <math.h>
 #include "evolution.h"
 #include "myrand.h"
 #include "threadpool.h"
@@ -29,6 +30,7 @@ void evolution_init(evolution* evo, graph_t* graph, const int population_size, c
     evo->essences_amount = population_size;
     evo->rouds = graph;
     evo->population = (int*)malloc(population_size * graph->n * sizeof(int));
+    evo->children = (int*)malloc(population_size * graph->n * sizeof(int));
 
     fulfillPopulation(evo);
 
@@ -96,9 +98,8 @@ void crossover(evolution* evo){
     //first step: take 2 parents; буду брать i и i+1 особь. а так же N-1 и 0-ую.
     //second: 1 parent gives half of genom to child
     //third: check func
-    int* children = (int*)malloc(evo->essence_len * evo->essences_amount * sizeof(int));
-    for (int i=0; i < evo->essence_len * evo->essences_amount; ++i)
-        children[i] = NO_GENE;
+    for (int i=0; i < evo->essence_len * evo->essences_amount; ++i) //new generation- new genes
+        evo->children[i] = NO_GENE;
 
     for (int i=0; i < evo->essences_amount; ++i){
         args_crossover *args;
@@ -106,15 +107,10 @@ void crossover(evolution* evo){
         args->parent1 = &evo->population[i*evo->essence_len];
         args->parent2 = &evo->population[((i+1) % (evo->essences_amount)) * evo->essence_len];
         args->parent_len = evo->essence_len;
-        args->child = &children[i*evo->essence_len];
+        args->child = &evo->children[i*evo->essence_len];
         threadpool_add(evo->threadpool, &crossover_func, (void*) args);
     }
     wait_all(evo->threadpool);
-    for (int i = 0; i < evo->essence_len * evo->essences_amount; ++i){
-        if (i % evo->essence_len == 0)
-            printf("\n");
-        printf("%d ", children[i]);
-    }
     printf("\ncrossover!\n");
 }
 
@@ -150,53 +146,29 @@ int findvalueinarray(int val, int *arr, int size){
     return 0;
 }
 
-void crossover_func(void* args){    //todo у нас ведь всегда четная длина особи... округление вниз
+void crossover_func(void* args){    //todo у нас ведь всегда четная длина особи.. nope. округление вниз
     args_crossover* arg = (args_crossover*) args;
-    int width = (int)(arg->parent_len*0.5);
+    int width = (int)ceil(arg->parent_len*0.5);
     int start_copy = rand() % (int)(width);
     memcpy(&arg->child[start_copy], &arg->parent1[start_copy], width * sizeof(int));
 
     int index_in_p2;
     int gen_in_p1, ind_gen_in_p2, gen_in_p2;
-    printf("in crossover\n");
-    for (int i = 0; i < arg->parent_len; ++i){
-        printf("%d ", arg->parent1[i]);
-    }
-    printf("\n");
-    for (int i = 0; i < arg->parent_len; ++i){
-        printf("%d ", arg->parent2[i]);
-    }
-    printf("\n");
-    for (int i = 0; i < arg->parent_len; ++i){
-        printf("%d ", arg->child[i]);
-    }
-    printf("\n");
 
     for (int i = start_copy; i < start_copy + width; ++i){      //распределяем по потомку уникальные гены род2.
-        if (!findvalueinarray(arg->parent2[i], arg->child, arg->parent_len)){ //если в родителе2 нашелся новый ген(город)
+        if (!findvalueinarray(arg->parent2[i], &arg->child[0], arg->parent_len)){ //если в родителе2 нашелся новый ген(город)
             index_in_p2 = i;                                                     //берем индекс этого гена
-            while (1) {                                 //пока на найдем место
-                //printf("searching..\n");
+            int max_steps = width; //от зацикливания, в случае полного совпадения "генов"
+            while (max_steps-- > 0) {                                 //пока на найдем место
                 gen_in_p1 = arg->parent1[index_in_p2];                         //берем ген из род1,с индексом нового гена в род2.
                 ind_gen_in_p2 = findvalueinarray(gen_in_p1, arg->parent2, arg->parent_len);   //ищем индекс этого гена в род2(во всём)
-                gen_in_p2 = arg->parent2[ind_gen_in_p2];                         //берем это ген
-                //printf("gen_in_p2=%d\n", gen_in_p2);
-                if (!findvalueinarray(gen_in_p2, arg->child, arg->parent_len)) {   //если его ещё нет в потомке
+                if (arg->child[ind_gen_in_p2] == NO_GENE){               //если тут ген потомка ещё не определен
                     arg->child[ind_gen_in_p2] = arg->parent2[i];         //то по новому индексу вставляем,
-                    printf("Get it!\n");
-                    for (int i = 0; i < arg->parent_len; ++i){
-                        printf("%d ", arg->child[i]);
-                    }
-                    printf("\n");
-                    break;                                                        // найденный ещё в начале, уникальный элемент
+                    break;                                                     // найденный ещё в начале, уникальный элемент
                 } else {
-                    //NO!!! //index_in_p2 = findvalueinarray(gen_in_p2, arg->child, arg->parent_len);
-                    index_in_p2 = gen_in_p2;
-
+                    index_in_p2 = ind_gen_in_p2;
                 }
             }
-        } else {
-            printf("skip\n");
         }
     }
 
@@ -205,7 +177,6 @@ void crossover_func(void* args){    //todo у нас ведь всегда че�
             arg->child[i] = arg->parent2[i];
     }
 }
-
 
 void endWork(evolution* evo){
     threadpool_destroy(evo->threadpool);

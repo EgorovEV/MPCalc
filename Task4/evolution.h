@@ -12,6 +12,7 @@ typedef struct evolution {
     //fields
     graph_t* rouds;              //указатель на граф дорог.
     int* population;            //популяция - маршруты
+    int* children;
     int essence_len;
     int essences_amount;  //количество особей- городов
     int best_essences;    //количество оставшихся в живых лучших особей- маршрутов после селекции

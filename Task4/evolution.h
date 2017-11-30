@@ -15,7 +15,7 @@ typedef struct evolution {
     int* children;
     int essence_len;
     int essences_amount;  //количество особей- городов
-    int best_essences;    //количество оставшихся в живых лучших особей- маршрутов после селекции
+    //int best_essences;    //количество оставшихся в живых лучших особей- маршрутов после селекции// буду брать половину
     float mutation_factor;  //вероятность поменять"гены"(города) местами
     threadpool_t* threadpool;
 } evolution;

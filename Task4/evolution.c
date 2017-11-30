@@ -13,19 +13,21 @@
 #define NO_GENE -2
 //TODO Сдалать освободение памяти!!!
 
-
+/*
+*/
 void swap_mutation(void*);
 void fitnes_func(void*);
 void crossover_func(void*);
 int compare (const void * a, const void * b) {
     return ( *(int*)a - *(int*)b );
 }
+int* get_best(int*, int);
 
 void fulfillPopulation(evolution*);
 //граф подается на вход уже заполненным
 void evolution_init(evolution* evo, graph_t* graph, const int population_size, const int old_survivals, const float mutations, int threads){
     evo->essence_len = graph->n;
-    evo->best_essences = old_survivals;
+    //evo->best_essences = old_survivals;
     evo->mutation_factor = mutations;
     evo->essences_amount = population_size;
     evo->rouds = graph;
@@ -38,34 +40,83 @@ void evolution_init(evolution* evo, graph_t* graph, const int population_size, c
 }
 
 void selection(evolution* evo){
+    //printf("nachali!\n");
     int** weight = (int**)malloc(evo->essences_amount * sizeof(int*));
+    int* type_essence[2];
+    type_essence[0] = evo->population;
+    type_essence[1] = evo->children;
+    //шаг 1.
+    int counter_new_essence = 0;
+    int* new_generation = (int*)malloc(evo->essence_len * evo->essences_amount * sizeof(int));
+    for (int type_es = 0; type_es < 2; ++type_es) {
+        for (int i = 0; i < evo->essences_amount; ++i) {
+            args_weight *args;
+            args = (args_weight *) malloc(sizeof(args_weight));
+            args->essence_len = evo->essence_len;
+            //args->essence = &evo->population[i * evo->essence_len];
+            args->essence = &((type_essence[type_es])[i*evo->essence_len]);
+            args->ans = 0;
+            args->pathes = evo->rouds;
 
-    for (int i = 0; i < evo->essences_amount; ++i){
-        args_weight *args;
-        args = (args_weight*)malloc(sizeof(args_weight));
-        args->essence_len = evo->essence_len;
-        args->essence = &evo->population[i * evo->essence_len];
-        args->ans = 0;
-        args->pathes = evo->rouds;
+            threadpool_add(evo->threadpool, &fitnes_func, (void *) args);
+            weight[i] = &args->ans;
+        }
+        wait_all(evo->threadpool);
+        //printf("end with threadpool in type %d\n", type_es);
 
-        threadpool_add(evo->threadpool, &fitnes_func, (void*) args);
-        weight[i] = &args->ans;
+        int *sorted_weight = (int *) malloc(evo->essences_amount * sizeof(int));
+        for (int i = 0; i < evo->essences_amount; ++i) {
+            sorted_weight[i] = *weight[i];
+        }
+
+        qsort(sorted_weight, evo->essences_amount, sizeof(int), compare);
+
+        int best_essences = evo->essences_amount / 2;
+        if (type_es == 1 && (evo->essences_amount)%2){
+            ++best_essences;
+        }
+        int suitable_max = sorted_weight[best_essences];
+
+        /*for (int i = 0; i < evo->essences_amount; ++i) {
+            printf("%d ", sorted_weight[i]);
+        }
+        printf("\n");*/
+        //printf("prepare for copy!\n");
+
+        for (int i = 0; i < evo->essences_amount; ++i){
+            if ((*weight[i] < suitable_max) && (best_essences)){
+                //printf("hello!\n");
+                memcpy(&new_generation[counter_new_essence*evo->essence_len],
+                       &(type_essence[type_es])[(i / evo->essences_amount) * evo->essence_len], evo->essence_len);
+                //printf("hi\n");
+                ++counter_new_essence;
+                --best_essences;
+            }
+        }
+    }
+    memcpy(evo->population, new_generation, evo->essence_len * evo->essences_amount);
+    printf("Selection! min waitght before= %d;\n", *weight[0]);
+}
+
+void crossover(evolution* evo){
+    //PMX algo
+    //first step: take 2 parents; буду брать i и i+1 особь. а так же N-1 и 0-ую.
+    //second: 1 parent gives half of genom to child
+    //third: check func
+    for (int i=0; i < evo->essence_len * evo->essences_amount; ++i) //new generation- new genes
+        evo->children[i] = NO_GENE;
+
+    for (int i=0; i < evo->essences_amount; ++i){
+        args_crossover *args;
+        args = (args_crossover*)malloc(sizeof(args_crossover));
+        args->parent1 = &evo->population[i*evo->essence_len];
+        args->parent2 = &evo->population[((i+1) % (evo->essences_amount)) * evo->essence_len];
+        args->parent_len = evo->essence_len;
+        args->child = &evo->children[i*evo->essence_len];
+        threadpool_add(evo->threadpool, &crossover_func, (void*) args);
     }
     wait_all(evo->threadpool);
-
-    int* sorted_weight = (int*)malloc(evo->essences_amount * sizeof(int));
-    for (int i = 0; i < evo->essences_amount; ++i){
-        sorted_weight[i] = *weight[i];
-    }
-
-    qsort(sorted_weight, evo->essences_amount, sizeof(int), compare);
-
-    for (int i = 0; i < evo->essences_amount; ++i){
-        printf("%d ", sorted_weight[i]);
-    }
-    printf("\n");
-
-    printf("Selection!\n");
+    printf("\ncrossover!\n");
 }
 
 void mutation(evolution* evo){
@@ -93,28 +144,6 @@ void mutation(evolution* evo){
     wait_all(evo->threadpool);
 }
 
-void crossover(evolution* evo){
-    //PMX algo
-    //first step: take 2 parents; буду брать i и i+1 особь. а так же N-1 и 0-ую.
-    //second: 1 parent gives half of genom to child
-    //third: check func
-    for (int i=0; i < evo->essence_len * evo->essences_amount; ++i) //new generation- new genes
-        evo->children[i] = NO_GENE;
-
-    for (int i=0; i < evo->essences_amount; ++i){
-        args_crossover *args;
-        args = (args_crossover*)malloc(sizeof(args_crossover));
-        args->parent1 = &evo->population[i*evo->essence_len];
-        args->parent2 = &evo->population[((i+1) % (evo->essences_amount)) * evo->essence_len];
-        args->parent_len = evo->essence_len;
-        args->child = &evo->children[i*evo->essence_len];
-        threadpool_add(evo->threadpool, &crossover_func, (void*) args);
-    }
-    wait_all(evo->threadpool);
-    printf("\ncrossover!\n");
-}
-
-
 void swap_mutation(void* args){
     args_mutation* arg = (args_mutation*) args;
 
@@ -134,8 +163,8 @@ void fitnes_func(void* args){
         if (w!=-1)
             answer += w;
     }
+    answer+= graph_weight(arg->pathes, arg->essence[arg->essence_len-1], arg->essence[0]);
     arg->ans = answer;
-    printf("In fitn, and = %d\n", arg->ans);
 }
 
 int findvalueinarray(int val, int *arr, int size){

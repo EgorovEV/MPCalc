@@ -40,7 +40,7 @@ int main(int argc, char *argv[]){
     printf("\n");
     evolution_init(&evo, mygraph, N, N/2, 0.5, pthreads);   //не забыть условие для доп потоков!
 
-    int tmp_steps = 1;
+    int tmp_steps = 3;
     int step = 0;
     while (BEST_ACTIVITY_NOW == SLEEPIN) {
         crossover(&evo);

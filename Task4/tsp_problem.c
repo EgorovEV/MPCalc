@@ -12,8 +12,6 @@
 
 #define BEST_ACTIVITY_NOW 1
 #define SLEEPIN 1
-//TODO разобраться с рандомом
-//ТАМ srand в начале стоит! не забыть!
 
 
 int main(int argc, char *argv[]){
@@ -40,10 +38,12 @@ int main(int argc, char *argv[]){
     evolution evo;
     //printGraph(mygraph);
     printf("\n");
-    evolution_init(&evo, mygraph, N, N/2, 0.05, pthreads);   //не забыть условие для доп потоков!
 
     myrand_settings rnd;
-    myrand_init(&rnd, rand(), 1024*16, S);//S);
+    myrand_init(&rnd, rand(), 1024*32, S);//S);
+
+    evolution_init(&evo, &rnd, mygraph, N, N/2, 0.05, pthreads);   //не забыть условие для доп потоков!
+
     int tmp_steps = 100;
     int step = 0;
     int result = -1;
@@ -62,7 +62,7 @@ int main(int argc, char *argv[]){
     clock_gettime(CLOCK_MONOTONIC, &mt1);       //как в clion, в makefile добавить openmp?!
                                                 //(раньше без них писал, флаг fopenmp)
     while (BEST_ACTIVITY_NOW == SLEEPIN) {
-        crossover(&evo);
+        crossover(&evo, &rnd);
         selection(&evo);
         mutation(&evo, &rnd);
         ++whole_steps;

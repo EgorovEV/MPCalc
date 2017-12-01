@@ -22,9 +22,9 @@ int compare (const void * a, const void * b) {
 }
 int* get_best(int*, int);
 
-void fulfillPopulation(evolution*);
+void fulfillPopulation(evolution*, myrand_settings*);
 //граф подается на вход уже заполненным
-void evolution_init(evolution* evo, graph_t* graph, const int population_size, const int old_survivals, const float mutations, int threads){
+void evolution_init(evolution* evo, myrand_settings* rnd, graph_t* graph, const int population_size, const int old_survivals, const float mutations, int threads){
     evo->essence_len = graph->n;
     //evo->best_essences = old_survivals;
     evo->mutation_factor = mutations;
@@ -33,7 +33,7 @@ void evolution_init(evolution* evo, graph_t* graph, const int population_size, c
     evo->population = (int*)malloc(population_size * graph->n * sizeof(int));
     evo->children = (int*)malloc(population_size * graph->n * sizeof(int));
 
-    fulfillPopulation(evo);
+    fulfillPopulation(evo, rnd);
 
     evo->threadpool = threadpool_create(threads, 10000);
     evo->minimum = 2100000000;
@@ -195,7 +195,7 @@ void selection(evolution* evo) {
 
 }
 
-void crossover(evolution* evo){
+void crossover(evolution* evo, myrand_settings* rnd){
     //PMX algo
     //first step: take 2 parents; буду брать i и i+1 особь. а так же N-1 и 0-ую.
     //second: 1 parent gives half of genom to child
@@ -210,6 +210,7 @@ void crossover(evolution* evo){
         args->parent2 = &evo->population[((i+1) % (evo->essences_amount)) * evo->essence_len];
         args->parent_len = evo->essence_len;
         args->child = &evo->children[i*evo->essence_len];
+        args->rnd = rnd;
         threadpool_add(evo->threadpool, &crossover_func, (void*) args);
     }
     wait_all(evo->threadpool);
@@ -223,7 +224,7 @@ void mutation(evolution* evo, myrand_settings* rnd){
     }*/
 
     for (int i=0; i < evo->essences_amount; ++i) {
-        if ((rand() / (float) RAND_MAX) < evo->mutation_factor) {
+        if ((get_myrand(rnd) / (float) RAND_MAX) < evo->mutation_factor) {
             //printf("starte mutate in i = %d\n", i);
 
             args_mutation *args;
@@ -277,7 +278,7 @@ int findvalueinarray(int val, int *arr, int size){
 void crossover_func(void* args){    //todo у нас ведь всегда четная длина особи.. nope. округление вниз
     args_crossover* arg = (args_crossover*) args;
     int width = (int)ceil(arg->parent_len*0.5);
-    int start_copy = rand() % (int)(width);
+    int start_copy = get_myrand(arg->rnd) % (int)(width);
     memcpy(&arg->child[start_copy], &arg->parent1[start_copy], width * sizeof(int));
 
     int index_in_p2;
@@ -305,7 +306,7 @@ void crossover_func(void* args){    //todo у нас ведь всегда че�
     }
 }
 
-void fulfillPopulation(evolution* evo){
+void fulfillPopulation(evolution* evo, myrand_settings* rnd){
     const int array_size = evo->essence_len;
     int t = 0;
     int k = 0;
@@ -314,7 +315,7 @@ void fulfillPopulation(evolution* evo){
             evo->population[j * array_size + i] = i;
 
         for (int i = 0; i < array_size; ++i) {
-            k = rand() % (array_size - 1);
+            k = get_myrand(rnd) % (array_size - 1);
 //меняем местами два элемента: текущий и елемент со случайним номером
             t = evo->population[j * array_size + i];
             evo->population[j * array_size + i] = evo->population[j * array_size + k];

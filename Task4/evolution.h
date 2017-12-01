@@ -26,11 +26,11 @@ typedef struct evolution {
 
 
 //methods
-void evolution_init(evolution* evo, graph_t*, const int, const int, const float, int);
+void evolution_init(evolution* evo, myrand_settings*, graph_t*, const int, const int, const float, int);
 
 void selection(evolution*);
 void mutation(evolution*, myrand_settings*);
-void crossover(evolution*);
+void crossover(evolution*, myrand_settings*);
 int minpath(evolution*);
 int maxpath(evolution*);
 int avgpath(evolution*);
@@ -54,6 +54,7 @@ typedef struct task_crossover {
     int* parent2;
     int parent_len;
     int* child;
+    myrand_settings* rnd;
 } args_crossover;
 
 #endif //HOMEWORKS_5SEM_POPULATION_H

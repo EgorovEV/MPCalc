@@ -133,6 +133,7 @@ int threadpool_free(threadpool_t *pool)
         pthread_mutex_lock(&(pool->lock));
         pthread_mutex_destroy(&(pool->lock));
         pthread_cond_destroy(&(pool->notify));
+        pthread_cond_destroy(&(pool->collect_all));
     }
     free(pool);
     return 0;
@@ -142,7 +143,7 @@ int threadpool_free(threadpool_t *pool)
 void threadpool_barier(threadpool_t *pool) {
     printf("asfdasdfghjkl;lkjhgfds\n");
     pthread_barrier_wait(&pool->mybarrier);
-    //printf("delete this\n"); //todo !
+    //printf("delete this\n");
 }*/
 
 void wait_all(threadpool_t* pool){

@@ -11,9 +11,7 @@
 
 
 typedef struct myrand_settings{
-    pthread_mutex_t myrand_lock1;
-    pthread_cond_t myrand_cond_full;
-    pthread_cond_t myrand_cond_empty;
+
     pthread_t myrand_thread;
 
     int myrand_arr_size;
@@ -22,7 +20,7 @@ typedef struct myrand_settings{
     int myrand_seed;
     int myrand_arr_count;
     int *arrrnd;
-    int **myrand_arrs;
+    //int **myrand_arrs;
 
     int sended;
 }myrand_settings;

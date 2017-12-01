@@ -7,6 +7,7 @@
 
 #include "graph.h"
 #include "threadpool.h"
+#include "myrand.h"
 
 typedef struct evolution {
     //fields

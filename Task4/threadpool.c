@@ -168,11 +168,9 @@ static void *threadpool_thread(void *threadpool)
             pthread_cond_signal(&pool->collect_all);
         /* Wait on condition variable, check for spurious wakeups.
            When returning from pthread_cond_wait(), we own the lock. */
-        while((pool->count == 0) && (!pool->shutdown)) {  //Э
-            //printf("qwe]\n");
+        while((pool->count == 0) && (!pool->shutdown)) {  //?
             pthread_cond_wait(&(pool->notify), &(pool->lock));
         }
-        //printf("aaaasssddd]\n");
         if((pool->shutdown == 1) &&
             (pool->count == 0)) {
             break;
@@ -196,5 +194,4 @@ static void *threadpool_thread(void *threadpool)
 
     pthread_mutex_unlock(&(pool->lock));
     pthread_exit(NULL);
-    return(NULL);
 }

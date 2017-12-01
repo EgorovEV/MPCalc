@@ -8,6 +8,7 @@
 #include "graph.h"
 #include "evolution.h"
 #include "threadpool.h"
+#include "myrand.h"
 
 #define BEST_ACTIVITY_NOW 1
 #define SLEEPIN 1

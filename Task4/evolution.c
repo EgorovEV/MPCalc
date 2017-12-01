@@ -223,7 +223,7 @@ void mutation(evolution* evo){
     }*/
 
     for (int i=0; i < evo->essences_amount; ++i) {
-        if ((get_rand() / (float) RAND_MAX) < evo->mutation_factor) {
+        if ((rand() / (float) RAND_MAX) < evo->mutation_factor) {
             //printf("starte mutate in i = %d\n", i);
 
             args_mutation *args;
@@ -245,8 +245,8 @@ void mutation(evolution* evo){
 void swap_mutation(void* args){
     args_mutation* arg = (args_mutation*) args;
 
-    int city1 = get_rand() % arg->essence_len;
-    int city2 = get_rand() % arg->essence_len;
+    int city1 = rand() % arg->essence_len;
+    int city2 = rand() % arg->essence_len;
 
     int tmp = arg->essence[city1];
     arg->essence[city1] = arg->essence[city2];

@@ -7,33 +7,39 @@
 #include <pthread.h>
 #include "myrand.h"
 
-//момент осознания, зачем тут статик.
+
 //постепенное переписывание всей структуры myrand_settings сюда
 static int myrand_destroyed_global;
 static size_t myrand_arr_count_global;
 static int** myrand_arrs_global;
 static int sended_global;
+static int myrand_seed_g;
+
 //static int* arrrnd;
 static int myrand_arr_size_global;
+//int myrand_max_arr_count;
+static int myrand_max_arr_count_global;
 //int myrand_arr_size;
 //int *arrrnd;
 /*    pthread_mutex_t myrand_lock1;
     pthread_cond_t myrand_cond_full;
     pthread_cond_t myrand_cond_empty;*/
 
+static pthread_t myrand_thread_global;
+
 static pthread_mutex_t myrand_lock1_global = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t myrand_cond_full_global = PTHREAD_COND_INITIALIZER;
 static pthread_cond_t myrand_cond_empty_global = PTHREAD_COND_INITIALIZER;
 
-void * myrand_generator(void* void_rnd) {
-    myrand_settings* rnd = (myrand_settings*) void_rnd;
+void * myrand_generator() {
+    //myrand_settings* rnd = (myrand_settings*) void_rnd;
     pthread_mutex_lock(&myrand_lock1_global);
     for (;;) {
-        //printf("from rnd %d\n", rnd->myrand_max_arr_count);
+        //printf("from rnd %d\n", myrand_max_arr_count_global);
         int *arr;
         arr = (int *) malloc(myrand_arr_size_global * sizeof(int));
         //printf("here! in generator!\n");
-        while (!(myrand_destroyed_global || myrand_arr_count_global < rnd->myrand_max_arr_count)) {
+        while (!(myrand_destroyed_global || myrand_arr_count_global < myrand_max_arr_count_global)) {
             //printf("In generator. before wait\n");
             pthread_cond_wait(&myrand_cond_full_global, &myrand_lock1_global);
             //printf("here!\n");
@@ -46,7 +52,7 @@ void * myrand_generator(void* void_rnd) {
         pthread_mutex_unlock(&myrand_lock1_global);
 
         for (int i = 0; i < myrand_arr_size_global; ++i) {
-            arr[i] = rand_r(&rnd->myrand_seed);
+            arr[i] = rand_r(&myrand_seed_g);
         }
         //printf("end write to arr\n");
         pthread_mutex_lock(&myrand_lock1_global);
@@ -60,25 +66,32 @@ void * myrand_generator(void* void_rnd) {
     pthread_mutex_unlock(&myrand_lock1_global);
 }
 
-void myrand_init(myrand_settings* rnd, int seed, int arr_size, int max_arr_count) {
-    rnd = (myrand_settings*)malloc(sizeof(myrand_settings));
+void myrandsettings_init(myrand_settings* rnd){
+    //rnd = (myrand_settings*)malloc(sizeof(myrand_settings));
+    //rnd->arrrnd = (int*)malloc(arr_size*sizeof(int));
+    rnd->arrrnd = NULL;
+}
+
+void myrand_destroy_s(myrand_settings* rnd) {
+    free(rnd->arrrnd);
+}
+
+void myrand_init(int seed, int arr_size, int max_arr_count) {
     myrand_destroyed_global = 0;
     myrand_arr_count_global = 0;
     myrand_arr_size_global = arr_size;
     //printf("arrsize = %d\n", arr_size);
-    rnd->myrand_max_arr_count = max_arr_count;
-    rnd->myrand_seed = seed;
+    myrand_max_arr_count_global = max_arr_count;
+    //myrand_seed_g = seed;
 
     sended_global = myrand_arr_size_global;
-    rnd->arrrnd = (int*)malloc(arr_size*sizeof(int));
-
     myrand_arrs_global = (int**)malloc(max_arr_count * sizeof(int*));
 
-    pthread_create(&rnd->myrand_thread, NULL, myrand_generator, (void*)rnd);
+    pthread_create(&myrand_thread_global, NULL, myrand_generator, NULL);
     printf("END INIT\n");
 }
 
-void myrand_destroy(myrand_settings* rnd) {
+void myrand_destroy() {
     printf("Start destroy\n");
     pthread_mutex_lock(&myrand_lock1_global);
     myrand_destroyed_global = 1;
@@ -96,14 +109,14 @@ void myrand_destroy(myrand_settings* rnd) {
     free(myrand_arrs_global);
     //printf("b\n");
 
-    free(rnd->arrrnd);
+    //free(rnd->arrrnd);
     //printf("------------c\n");
 
     pthread_mutex_unlock(&myrand_lock1_global);
     //printf("here3\n");
     pthread_cond_signal(&myrand_cond_full_global);
     //printf("here2\n");
-    pthread_join(rnd->myrand_thread, NULL);
+    pthread_join(myrand_thread_global, NULL);
     //printf("section1 passed\n");
     pthread_mutex_destroy(&myrand_lock1_global);
     pthread_cond_destroy(&myrand_cond_full_global);

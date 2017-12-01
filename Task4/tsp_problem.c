@@ -40,7 +40,8 @@ int main(int argc, char *argv[]){
     printf("\n");
 
     myrand_settings rnd;
-    myrand_init(&rnd, rand(), 1024*32, S);//S);
+    myrandsettings_init(&rnd);
+    myrand_init( rand(), 1024*32, S);//S);
 
     evolution_init(&evo, &rnd, mygraph, N, N/2, 0.05, pthreads);   //не забыть условие для доп потоков!
 
@@ -80,7 +81,7 @@ int main(int argc, char *argv[]){
         fprintf(file1, "%d %d %d\n", evo.minimum, evo.maximum, evo.average);
     }
     fclose(file1);
-    myrand_destroy(&rnd);
+    myrand_destroy_s(&rnd);
     endWork(&evo);
     clock_gettime(CLOCK_MONOTONIC, &mt2);
     FILE *file;
@@ -93,6 +94,7 @@ int main(int argc, char *argv[]){
         fprintf(file, "%d %d %d %d %d %ld %d \n", pthreads, N, S, vert_amount, whole_steps,
                 mt2.tv_sec - mt1.tv_sec, result);
     fclose(file);
+    myrand_destroy();
     printf("Hello, world!\n");
     return 0;
 }

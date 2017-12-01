@@ -14,13 +14,13 @@ typedef struct myrand_settings{
 /*    pthread_mutex_t myrand_lock1;
     pthread_cond_t myrand_cond_full;
     pthread_cond_t myrand_cond_empty;*/
-    pthread_t myrand_thread;
+    //pthread_t myrand_thread;
 
     //int myrand_arr_size;
-    int myrand_max_arr_count;
+    //int myrand_max_arr_count;
     //int myrand_destroyed;
-    int myrand_seed;
-    int myrand_arr_count;
+    //int myrand_seed;
+    //int myrand_arr_count;
     int *arrrnd;
     //int **myrand_arrs;
 
@@ -29,9 +29,10 @@ typedef struct myrand_settings{
 
 
 
-
-void myrand_init(myrand_settings*, int, int, int);
-void myrand_destroy(myrand_settings*);
+void myrandsettings_init(myrand_settings*);
+void myrand_init(int, int, int);
+void myrand_destroy();
+void myrand_destroy_s(myrand_settings* rnd);
 
 int get_myrand(myrand_settings*);
 

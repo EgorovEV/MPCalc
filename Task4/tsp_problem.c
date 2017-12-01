@@ -41,7 +41,7 @@ int main(int argc, char *argv[]){
 
     myrand_settings rnd;
     myrandsettings_init(&rnd);
-    myrand_init( rand(), 1024*32, S);//S);
+    myrand_init( rand(), 1024*1024*10, S);//S);
 
     evolution_init(&evo, &rnd, mygraph, N, N/2, 0.05, pthreads);   //не забыть условие для доп потоков!
 

@@ -215,7 +215,7 @@ void crossover(evolution* evo){
     wait_all(evo->threadpool);
 }
 
-void mutation(evolution* evo){
+void mutation(evolution* evo, myrand_settings* rnd){
     /*for (int i =0; i< evo->essences_amount * evo->essence_len; ++i){
         if (i % evo->essence_len == 0)
             printf("\n");
@@ -230,7 +230,7 @@ void mutation(evolution* evo){
             args = (args_mutation*)malloc(sizeof(args_mutation));
             args->essence = &evo->population[i * evo->essence_len];
             args->essence_len = evo->essence_len;
-
+            args->rnd = rnd;
             int err = threadpool_add(evo->threadpool, &swap_mutation, (void*) args);
             if (err!=0)
                 printf("AAAAAAAAAAAAAAAAAAAAAAAAAAAAA!!!!!!!!!!!!!!!!!!\n");
@@ -244,9 +244,10 @@ void mutation(evolution* evo){
 
 void swap_mutation(void* args){
     args_mutation* arg = (args_mutation*) args;
-
-    int city1 = rand() % arg->essence_len;
-    int city2 = rand() % arg->essence_len;
+    //int r1 = get_myrand(arg->rnd);
+    //printf("~~~~~~~Rand=%d", r1);
+    int city1 = get_myrand(arg->rnd) % arg->essence_len;
+    int city2 = get_myrand(arg->rnd) % arg->essence_len;
 
     int tmp = arg->essence[city1];
     arg->essence[city1] = arg->essence[city2];

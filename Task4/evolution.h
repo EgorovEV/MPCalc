@@ -29,7 +29,7 @@ typedef struct evolution {
 void evolution_init(evolution* evo, graph_t*, const int, const int, const float, int);
 
 void selection(evolution*);
-void mutation(evolution*);
+void mutation(evolution*, myrand_settings*);
 void crossover(evolution*);
 int minpath(evolution*);
 int maxpath(evolution*);
@@ -39,6 +39,7 @@ int endWork(evolution*);
 typedef struct task_mutation {
     int* essence;
     int essence_len;
+    myrand_settings* rnd;
 } args_mutation;
 
 typedef struct task_caclWeight {

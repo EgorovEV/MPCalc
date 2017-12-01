@@ -43,7 +43,7 @@ int main(int argc, char *argv[]){
     evolution_init(&evo, mygraph, N, N/2, 0.05, pthreads);   //не забыть условие для доп потоков!
 
     myrand_settings rnd;
-    myrand_init(&rnd, rand(), 100, 10);//S);
+    myrand_init(&rnd, rand(), 1024*16, S);//S);
     int tmp_steps = 100;
     int step = 0;
     int result = -1;
@@ -64,7 +64,7 @@ int main(int argc, char *argv[]){
     while (BEST_ACTIVITY_NOW == SLEEPIN) {
         crossover(&evo);
         selection(&evo);
-        mutation(&evo);
+        mutation(&evo, &rnd);
         ++whole_steps;
 
         printf("%d\n",minpath(&evo));

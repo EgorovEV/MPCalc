@@ -42,6 +42,8 @@ int main(int argc, char *argv[]){
     printf("\n");
     evolution_init(&evo, mygraph, N, N/2, 0.05, pthreads);   //не забыть условие для доп потоков!
 
+    myrand_settings rnd;
+    myrand_init(&rnd, rand(), 100, 10);//S);
     int tmp_steps = 100;
     int step = 0;
     int result = -1;
@@ -64,6 +66,7 @@ int main(int argc, char *argv[]){
         selection(&evo);
         mutation(&evo);
         ++whole_steps;
+
         printf("%d\n",minpath(&evo));
         if (result == minpath(&evo)){
             ++stable_steps;
@@ -77,6 +80,7 @@ int main(int argc, char *argv[]){
         fprintf(file1, "%d %d %d\n", evo.minimum, evo.maximum, evo.average);
     }
     fclose(file1);
+    myrand_destroy(&rnd);
     endWork(&evo);
     clock_gettime(CLOCK_MONOTONIC, &mt2);
     FILE *file;

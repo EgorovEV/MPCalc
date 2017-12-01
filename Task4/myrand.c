@@ -7,106 +7,112 @@
 #include <pthread.h>
 #include "myrand.h"
 
-int get_rand(){
-    return rand();
-}
 
+static size_t myrand_arr_count_global;
 
 //static size_t myrand_arr_size;
 //static size_t myrand_max_arr_count;
 
-//static int **myrand_arrs;
-//static int myrand_destroyed = 0;
-//static unsigned int myrand_state;
-//static size_t myrand_arr_count = 0;
-
-//static pthread_t myrand_thread;
-//static pthread_mutex_t myrand_lock = PTHREAD_MUTEX_INITIALIZER;
-//static pthread_cond_t myrand_cond_full = PTHREAD_COND_INITIALIZER;
-//static pthread_cond_t myrand_cond_empty = PTHREAD_COND_INITIALIZER;
 
 void * myrand_generator(void* void_rnd) {
     myrand_settings* rnd = (myrand_settings*) void_rnd;
-
+    pthread_mutex_lock(&rnd->myrand_lock1);
+    printf("from rnd %d\n", rnd->myrand_max_arr_count);
     for (;;) {
-        pthread_mutex_lock(&rnd->myrand_lock);
         int *arr;
-        size_t i;
-
-        while ((rnd->myrand_arr_count < rnd->myrand_max_arr_count) || (!rnd->myrand_destroyed)) {
-            pthread_cond_wait(&rnd->myrand_cond_full, &rnd->myrand_lock);
+        arr = (int *) malloc(rnd->myrand_arr_size * sizeof(int));
+        printf("here! in generator!\n");
+        while (!(rnd->myrand_destroyed || myrand_arr_count_global < rnd->myrand_max_arr_count)) {
+            printf("In generator. before wait\n");
+            pthread_cond_wait(&rnd->myrand_cond_full, &rnd->myrand_lock1);
+            printf("here!\n");
         }
+        printf("xmmm\n");
 
         if (rnd->myrand_destroyed)
             break;
 
-        pthread_mutex_unlock(&rnd->myrand_lock);
+        pthread_mutex_unlock(&rnd->myrand_lock1);
 
-        for (i = 0; i < rnd->myrand_arr_size; ++i) {
+        for (int i = 0; i < rnd->myrand_arr_size; ++i) {
             arr[i] = rand_r(&rnd->myrand_seed);
+            //printf("o here\n");
         }
-        pthread_mutex_lock(&rnd->myrand_lock);
+        printf("end write to arr\n");
+        pthread_mutex_lock(&rnd->myrand_lock1);
 
-        if (!rnd->myrand_arr_count) {
+        if (!myrand_arr_count_global) {
             pthread_cond_signal(&rnd->myrand_cond_empty);
         }
-        rnd->myrand_arrs[rnd->myrand_arr_count++] = arr;
+        rnd->myrand_arrs[myrand_arr_count_global] = arr;
+        myrand_arr_count_global+=1;
+//        printf("end? starts new step myrand_arr_count = %d!\n", myrand_arr_count_global);
     }
-    pthread_mutex_unlock(&rnd->myrand_lock);
+    printf("END GERERATE\n");
+    pthread_mutex_unlock(&rnd->myrand_lock1);
 }
-/*
+
 void myrand_init(myrand_settings* rnd, int seed, int arr_size, int max_arr_count) {
     rnd = (myrand_settings*)malloc(sizeof(myrand_settings));
     rnd->myrand_destroyed = 0;
-    rnd->myrand_arr_count = 0;
+    myrand_arr_count_global = 0;
     rnd->myrand_arr_size = arr_size;
+    printf("arrsize = %d\n", arr_size);
     rnd->myrand_max_arr_count = max_arr_count;
     rnd->myrand_seed = seed;
 
-    rnd->sended = rnd->myrand_arr_size;   // = 0
-    rnd->arr = (int *) malloc(rnd->myrand_arr_size * sizeof(int));;
+    rnd->sended = rnd->myrand_arr_size;
+    rnd->arrrnd = (int*)malloc(arr_size*sizeof(int));
 
-    rnd->myrand_arrs = (int **) malloc(max_arr_count * sizeof(int *));
+    rnd->myrand_arrs = (int**)malloc(max_arr_count * sizeof(int*));
 
     pthread_create(&rnd->myrand_thread, NULL, myrand_generator, (void*)rnd);
-}*/
-void myrand_init() {
-    printf("asd\n");
+    printf("END INIT\n");
 }
 
 void myrand_destroy(myrand_settings* rnd) {
-    pthread_mutex_lock(&rnd->myrand_lock);
+    printf("Start destroy\n");
+    pthread_mutex_lock(&rnd->myrand_lock1);
     rnd->myrand_destroyed = 1;
 
-    while (rnd->myrand_arr_count)
-        free(rnd->myrand_arrs[--rnd->myrand_arr_count]);
-    free(rnd->myrand_arrs);
+    printf("Take MUTEX\n");
 
-    free(rnd->arr);  //?
+//    printf("myrand_arr_count=%d\n", myrand_arr_count_global);
+    while (myrand_arr_count_global != 0) {
+        printf("aa\n");
+        free(rnd->myrand_arrs[--myrand_arr_count_global]);  //туть багь
+        printf("bb\n");
+    }
+    //free(rnd->myrand_arrs);
+    printf("b\n");
 
-    pthread_mutex_unlock(&rnd->myrand_lock);
-    pthread_cond_signal(&rnd->myrand_cond_full);
+    free(rnd->arrrnd);
+    printf("------------c\n");
+
+    pthread_mutex_unlock(&rnd->myrand_lock1);
+    //pthread_cond_signal(&rnd->myrand_cond_full);
     pthread_join(rnd->myrand_thread, NULL);
-
-    pthread_mutex_destroy(&rnd->myrand_lock);
-    pthread_cond_destroy(&rnd->myrand_cond_full);
+    printf("section1 passed\n");
+    pthread_mutex_destroy(&rnd->myrand_lock1);
+    //pthread_cond_destroy(&rnd->myrand_cond_full);
     pthread_cond_destroy(&rnd->myrand_cond_empty);
 }
 
 int get_myrand(myrand_settings *rnd) {
     if (rnd->sended == rnd->myrand_arr_size) {
         rnd->sended = 0;
-        //free(rnd->arr);       //?
+        free(rnd->arrrnd);
+        printf("Get rand\n");
 
-        pthread_mutex_lock(&rnd->myrand_lock);
-        while (!rnd->myrand_arr_count)
-            pthread_cond_wait(&rnd->myrand_cond_empty, &rnd->myrand_lock);
+        pthread_mutex_lock(&rnd->myrand_lock1);
+        while (!myrand_arr_count_global)
+            pthread_cond_wait(&rnd->myrand_cond_empty, &rnd->myrand_lock1);
 
-        rnd->arr = rnd->myrand_arrs[--rnd->myrand_arr_count];
-        pthread_mutex_unlock(&rnd->myrand_lock);
+        rnd->arrrnd = rnd->myrand_arrs[--myrand_arr_count_global];
+        pthread_mutex_unlock(&rnd->myrand_lock1);
 
         pthread_cond_signal(&rnd->myrand_cond_full);
     }
 
-    return rnd->arr[rnd->sended++];
+    return rnd->arrrnd[rnd->sended++];
 }
